@@ -13,6 +13,9 @@ fibreLimits = []
 for count in range(36):
     fibreLimits.append(0)
 
+    
+# These lists represent the journies between nodes and the amount of data that can travel between them #
+    
 oneToTwo = 200      # Index 1
 oneToFour = 600     # Index 2
 twoToThree = 100    # Index 8
