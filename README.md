@@ -1,7 +1,7 @@
 # NetworkSimulator
 A system to simulate packets moving around a network. 
 
-**26.02.2019**
+
 
 As part of my tutorage I have been learning about networks, my tutor
 explained the underlying princibles, a rough idea of how the code
