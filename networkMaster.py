@@ -25,7 +25,7 @@ fourToSix = 900  # Index 23
 fiveToThree = 450  # Index 26
 fiveToFour = 800  # Index 27
 fiveToSix = 470  # Index 29
-sixToTwo = 270  # Index 31
+sixToTwo = 270  # Index 31dropped
 sixToFour = 900  # Index 33
 sixToFive = 470  # Index 35
 
@@ -164,7 +164,6 @@ class node:
                 d = random.choice(dataType)
                 for count in range(3):
                     timeStamp = time.time()
-                    #print('TIMESTAMP: ' + str(timeStamp))
                     partNo = str(str(count + 1))
                     p = packet(sentFrom, sendTo, data, d, timeStamp, partNo, packetNo)
                     self.forwardList.append(p)
@@ -285,14 +284,12 @@ class node:
         for count in range(len(self.packetList)):
             packet = self.packetList[count]
             if abs(now - packet.timeStamp) > 2.0:
-                #print('NOW TIME: ' + str(now) + ' SEND TIME: ' + str(packet.timeStamp))
                 checkingList.append(packet)
 
         checkLength = len(checkingList)
 
 
         while checkLength > 0:
-                #print('CHECK LENGTH IS: ' + str(checkLength))
                 partList = []
                 packet = checkingList[0]
                 partNo = packet.returnPartNo()
@@ -307,17 +304,6 @@ class node:
                     if packet2No == packetNo and pack2From == packFrom and packet2Part != partNo:
                         partList.append(packet2)
 
-                ## This FULLPARTPRINT is a debugging aid, it takes my part list full of packet objects and returns a list of each part number.
-
-                fullPartPrint = []
-
-                for x in range(len(partList)):
-                    fullPartPrint.append(partList[x].returnPartNo())
-
-                #print('CHECKED PART LIST AND WE HAVE: ' + str(partList))
-
-                #print('PARTLIST FROM CHECK IS: ' + str(fullPartPrint))
-
                 if len(partList) == 3:
                     packetsArrived.append(partList)
                     packNo = partList[0].returnPacketNo()
@@ -329,7 +315,6 @@ class node:
                     checkLength = len(checkingList)
 
                 else:
-                    #print('MUST RESEND')
                     partCheckList = [1, 2, 3]
                     partGotList = []
                     sentFromNode = partList[0].returnSentFrom()
@@ -340,37 +325,22 @@ class node:
                         partNo = int(partList[miniCount].returnPartNo())
                         partGotList.append(partNo)
 
-
-                    # This symmetric difference function gives us the missing parts.
-
-                    #print('---------')
-                    #print('HERE ARE THE PARTS WE HAVE GOT: ' + str(partGotList))
                     mergedList = list(set(partGotList).symmetric_difference(set(partCheckList)))
-                    #print('HERE ARE THE PARTS WE ARE REQUESTING: ' + str(mergedList))
-                    #print('----------')
-
+                    
                     howMany = 3 - len(mergedList)
 
                     if howMany == 1:
                         resendParts += 1
-                        #print('ADDED ONE TO HOW MANY')
                     elif howMany == 2:
                         resendParts += 2
-                        #print('ADDED two TO HOW MANY')
 
                     for x in range(len(partList)):
                         checkingList.remove(partList[x])
 
                     checkLength = len(checkingList)
 
-                    #print('REQUESTING FROM resendPart: ' + str(mergedList))
                     for finalCount in range(len(mergedList)):
                         nodeList[sentFromNode].resendPart(packetNumber, mergedList[finalCount])
-
-
-
-
-
 
         for countThree in range(len(self.packetList)):
             packet = self.packetList[countThree]
@@ -380,8 +350,6 @@ class node:
         print('HELLO, THIS IS NODE ' + str(self.address) + ' AND I HAVE REQUESTED A TOTAL OF ' + str(resendParts) + ' PACKETS TO BE RESENT FROM VARIOUS NODES.')
 
     def resendPart(self, packNo, partNo):
-        #print('FROM RESEND WE ARE LOOKING FOR; ' + str(partNo))
-        resend = True
         for count in range(len(self.sentPackets)):
             packet = self.sentPackets[count]
             packetNo = int(packet.returnPacketNo())
@@ -399,8 +367,6 @@ class node:
 
 
     def recievePacket(self, packet):
-
-
         packet.addVisit(self.address)
         dest = packet.returnDestination()
         if self.address == dest:
@@ -570,78 +536,24 @@ def main():
     nodeFive.checkPacketParts()
     nodeSix.checkPacketParts()
 
-    #nodeOne.sortPackets()
+
 
 
 
     print('-------------------------------------------')
     print('')
 
-    # nodeOne.returnIterationData()
-    # nodeTwo.returnIterationData()
-    # nodeThree.returnIterationData()
-    # nodeFour.returnIterationData()
-    # nodeFive.returnIterationData()
-    # nodeSix.returnIterationData()
 
     totalArrived = len(packetsArrived)
 
     print('TOTAL PACKETS ARRIVED AT DESTINATION: ' + str(totalArrived))
 
-    ## Option block of packet information code ##
-
-    # for count in range(len(packetsArrived)):
-    #    print('---------------------------------------')
-    #    print('')
-    #    print('Packet arrival list index: ' + str(count))
-    #    print('Packet data type: ' + str(packetsArrived[count].returnDataType()))
-    #    print('Data from packet: ' + str(packetsArrived[count].returnPacketData()))
-    #    print('Packet was sent from: ' + str(packetsArrived[count].returnSentFrom()))
-    #    print('Packet was sent to: ' + str(packetsArrived[count].returnSendTo()))
-    #    print('Routing path of packet: ' + str(packetsArrived[count].returnVisitedList()))
-    #    print('This is packet number: ' + str(packetsArrived[count].returnPacketNo()))
-    #    print('This was packet: ' + str(packetsArrived[count].returnPartNo()) + ' of packet number: ' + str(packetsArrived[count].returnPacketNo()))
-    #    timeArrived = packetsArrived[count].returnTimeArrived()
-    #    print('Package speed: ' + str(timeArrived) + ' seconds.' )
-    #    print('')
-    #    print('-----------------------------------------')
 
     print('')
     print('TOTAL PACKETS CREATED: ' + str(totalPack))
     print('TOTAL PACKETS ARRIVED: ' + str(totalArrived))
     print('-------------')
 
-    nodeOneDest = []
-    nodeTwoDest = []
-    nodeThreeDest = []
-    nodeFourDest = []
-    nodeFiveDest = []
-    nodeSixDest = []
-
-    # for count in range(len(nodeOne.packetList)):
-    #    dest = str(nodeOne.packetList[count].returnDestination())
-    #    nodeOneDest.append(dest)
-    # print('ALL NODE ONE DESTINATIONS: ' + str(nodeOneDest))
-    # for count in range(len(nodeTwo.packetList)):
-    #    dest = str(nodeTwo.packetList[count].returnDestination())
-    #    nodeTwoDest.append(dest)
-    # print('NODE TWO DESTINATIONS: ' + str(nodeTwoDest))
-    # for count in range(len(nodeThree.packetList)):
-    #    dest = str(nodeThree.packetList[count].returnDestination())
-    #    nodeThreeDest.append(dest)
-    # print('NODE THREE DESTINATIONS: ' + str(nodeThreeDest))
-    # for count in range(len(nodeFour.packetList)):
-    #    dest = str(nodeFour.packetList[count].returnDestination())
-    #    nodeFourDest.append(dest)
-    # print('NODE FOUR DESTINATIONS: ' + str(nodeFourDest))
-    # for count in range(len(nodeFive.packetList)):
-    #    dest = str(nodeFive.packetList[count].returnDestination())
-    #    nodeFiveDest.append(dest)
-    # print('NODE FIVE DESTINATIONS: ' + str(nodeFiveDest))
-    # for count in range(len(nodeSix.packetList)):
-    #    dest = str(nodeSix.packetList[count].returnDestination())
-    #    nodeSixDest.append(dest)
-    # print('NODE SIX DESTINATIONS: ' + str(nodeSixDest))
 
     print('---------------------------')
     print('PACKAGES LEFT IN NODE ONE FORWARD LIST: ' + str(len(nodeOne.forwardList)))
@@ -688,12 +600,6 @@ def main():
     print('PACKAGES LEFT IN NODE FIVE PACKET LIST: ' + str(len(nodeFive.packetList)))
     print('--------------------------')
     print('PACKAGES LEFT IN NODE SIX PACKET LIST: ' + str(len(nodeSix.packetList)))
-
-
-
-
-
-    # THE FOLLOWING PRINT STATEMENTS SHOW THAT EVERY PACKET'S DESTINATION DOES NOT MATCH ITS CURRENT CODE PACKET LIST.
 
 
 main()
