@@ -1,5 +1,6 @@
 import random, time
 
+resentParts = []
 nodeList = []
 dataType = ['Video', 'Textfile', 'Audio', 'Code', 'Image', 'Game Streaming', 'Download Data','Audio Streaming','Video Streaming']
 packetsArrived = []
@@ -288,7 +289,6 @@ class node:
 
         checkLength = len(checkingList)
 
-
         while checkLength > 0:
                 partList = []
                 packet = checkingList[0]
@@ -304,11 +304,20 @@ class node:
                     if packet2No == packetNo and pack2From == packFrom and packet2Part != partNo:
                         partList.append(packet2)
 
+                ## This FULLPARTPRINT is a debugging aid, it takes my part list full of packet objects and returns a list of each part number.
+
+                fullPartPrint = []
+
+                for x in range(len(partList)):
+                    fullPartPrint.append(partList[x].returnPartNo())
+
                 if len(partList) == 3:
                     packetsArrived.append(partList)
-                    packNo = partList[0].returnPacketNo()
-                    sentFrom = partList[0].returnSentFrom()
-                    self.checkRemove(packNo, sentFrom)
+                    for y in range(len(partList)):
+                        packetDel = partList[y]
+                        packDelNo = packetDel.returnPacketNo()
+                        packDelFrom = packetDel.returnSentFrom()
+                        self.checkRemove(packDelNo, packDelFrom)
                     for x in range(3):
                         checkingList.remove(partList[x])
 
@@ -326,13 +335,6 @@ class node:
                         partGotList.append(partNo)
 
                     mergedList = list(set(partGotList).symmetric_difference(set(partCheckList)))
-                    
-                    howMany = 3 - len(mergedList)
-
-                    if howMany == 1:
-                        resendParts += 1
-                    elif howMany == 2:
-                        resendParts += 2
 
                     for x in range(len(partList)):
                         checkingList.remove(partList[x])
@@ -340,16 +342,15 @@ class node:
                     checkLength = len(checkingList)
 
                     for finalCount in range(len(mergedList)):
-                        nodeList[sentFromNode].resendPart(packetNumber, mergedList[finalCount])
+                        nodeList[sentFromNode].resendPart(packet,packetNumber, mergedList[finalCount])
 
         for countThree in range(len(self.packetList)):
             packet = self.packetList[countThree]
             packet.resetTimeStamp()
             packet.recordTimeArrived()
 
-        print('HELLO, THIS IS NODE ' + str(self.address) + ' AND I HAVE REQUESTED A TOTAL OF ' + str(resendParts) + ' PACKETS TO BE RESENT FROM VARIOUS NODES.')
+    def resendPart(self,packet, packNo, partNo):
 
-    def resendPart(self, packNo, partNo):
         for count in range(len(self.sentPackets)):
             packet = self.sentPackets[count]
             packetNo = int(packet.returnPacketNo())
@@ -363,10 +364,17 @@ class node:
                     while randomNode == 0:
                         randomNode = random.choice(possibleNodes)
                         if randomNode != 0:
+                            packet.resent = True
                             nodeList[randomNode].recievePacket(packet)
+                            resentParts.append(packet)
 
+        for count4 in range(len(self.sentPackets)):
+            packetDel = self.sentPackets[count4]
+            if packet == packetDel:
+                self.sentPackets.remove(packetDel)
 
     def recievePacket(self, packet):
+
         packet.addVisit(self.address)
         dest = packet.returnDestination()
         if self.address == dest:
@@ -375,7 +383,6 @@ class node:
             self.packRec += 1
         else:
             self.forwardList.append(packet)
-
 
     def checkListSize(self):
         return len(self.packetList)
@@ -422,6 +429,7 @@ class packet:
         self.timeArrived = 0.0
         self.resetTime = 0.0
         self.visitedList = []
+        self.resent = False
 
     def returnTimeArrived(self):
         return self.timeArrived
@@ -466,6 +474,9 @@ class packet:
     def returnPacketData(self):
         return self.data
 
+def emptyResent():
+     global resentParts
+     resentParts = []
 
 def main():
     nodeZero = node(0, 0, 0, 0, 0, 0, 0, 0)
@@ -501,9 +512,6 @@ def main():
 
     print(' TOtal packages created : ' + str(totalPack))
 
-
-    #for count in range(2):
-
     nodeOne.sortPackets()
     nodeOne.sendPackets()
     time.sleep(processTime[1])
@@ -536,24 +544,19 @@ def main():
     nodeFive.checkPacketParts()
     nodeSix.checkPacketParts()
 
-
-
-
+    #nodeOne.sortPackets()
 
     print('-------------------------------------------')
     print('')
-
 
     totalArrived = len(packetsArrived)
 
     print('TOTAL PACKETS ARRIVED AT DESTINATION: ' + str(totalArrived))
 
-
     print('')
     print('TOTAL PACKETS CREATED: ' + str(totalPack))
     print('TOTAL PACKETS ARRIVED: ' + str(totalArrived))
     print('-------------')
-
 
     print('---------------------------')
     print('PACKAGES LEFT IN NODE ONE FORWARD LIST: ' + str(len(nodeOne.forwardList)))
@@ -601,5 +604,14 @@ def main():
     print('--------------------------')
     print('PACKAGES LEFT IN NODE SIX PACKET LIST: ' + str(len(nodeSix.packetList)))
 
+    print('============================')
+    print('')
+    print('Total Number of resent Packets: ' + str(len(resentParts)))
+    print('-----------------------------------------')
+    print('')
+
+    # Need to empty the resentPackets list so we can track how many resends happen per iteration. 
+    
+    emptyResent()
 
 main()
