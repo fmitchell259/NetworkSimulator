@@ -9,7 +9,7 @@ should look and left me to start building.
 
 At the moment the network completes one full iteration, taking account
 of fibre-capacity, buffer-size and processing speed. Each packet is made
-up of three parts , randomly mixed then sent roudn the network. If
+up of three parts , randomly mixed then sent round the network. If
 a part is waiting at its arrival node for longer than two seconds, a 
 request is made to re-send that part. 
 
