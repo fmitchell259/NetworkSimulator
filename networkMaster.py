@@ -1,5 +1,4 @@
-import random, time
-
+import random, time, collections
 resentParts = []
 nodeList = []
 dataType = ['Video', 'Textfile', 'Audio', 'Code', 'Image', 'Game Streaming', 'Download Data','Audio Streaming','Video Streaming']
@@ -68,27 +67,21 @@ for count in range(36):
 
 
 def findBestTimes(arrivedList):
-    for count1 in range(6):
-        fromList = []
-        for count2 in range(len(arrivedList)):
-            packetList = arrivedList[count2]
-            packet = packetList[0]
-            packFrom = packet.returnSentFrom()
-            if packFrom == count1:
-                fromList.append(packet)
-            for count3 in range(len(fromList)):
-                if count1 == 1:
-                    pack = fromList[count3]
-                    packDest = pack.returnDestination()
-                    index = (((packDest - count1) * numberOfNodes) - 1)
-                    timeTrackerList[index].append(pack)
-                else:
-                    pack = fromList[count3]
-                    packDest = pack.returnDestination()
-                    index = (((count1 - 1) * numberOfNodes) + packDest - 1)
-                    timeTrackerList[index].append(pack)
 
-                    ## Time to test ##
+
+    for count2 in range(len(arrivedList)):
+        packetList = arrivedList[count2]
+        packet = packetList[0]
+        packFrom = packet.returnSentFrom()
+        if packFrom == 1:
+            packDest = packet.returnDestination()
+            index = packDest - 1
+            timeTrackerList[index].append(packet)
+        else:
+            packDest = packet.returnDestination()
+            index = ((packFrom - 1)*6) + (packDest-1)
+            timeTrackerList[index].append(packet)
+
 
     for count4 in range(len(timeTrackerList)):
         list = timeTrackerList[count4]
@@ -143,13 +136,7 @@ class node:
         time.sleep(self.processTime)
 
     def packetGen(self):
-        # -- I HAD TO CHANGE THE CODE FOR PART NUMBER --
-        # -- AS IT WAS THE PART INCLUDED A STRING SO COULDNT MATCH WHEN REQUESTING A RESEND
-        # -- AGAIN, CODE CAN BE IMPLEMENTED TO KEEP TRACK OF HOW MANY PARTS A PACKET HAS.
-        # -- EVENTUALLY WE WILL HAVE PACKETS CREATE A RANDOM AMOUNT OF PARTS FOR THEMSELVES.
-
         packetCount = 1000
-        # packetCount = random.randint(1,self.nodeSize)
         returnCount = 0
         packetNo = 0
         print('CREATING ' + str(packetCount) + ' PACKETS FOR NODE ' + str(self.address))
@@ -277,10 +264,10 @@ class node:
             delPack += 1
 
     def checkPacketParts(self):
-
         checkingList = []
         now = time.time()
         resendParts = 0
+        streamedPartsRemoved = 0
 
         for count in range(len(self.packetList)):
             packet = self.packetList[count]
@@ -288,6 +275,7 @@ class node:
                 checkingList.append(packet)
 
         checkLength = len(checkingList)
+
 
         while checkLength > 0:
                 partList = []
@@ -303,8 +291,6 @@ class node:
                     pack2From = packet2.returnSentFrom()
                     if packet2No == packetNo and pack2From == packFrom and packet2Part != partNo:
                         partList.append(packet2)
-
-                ## This FULLPARTPRINT is a debugging aid, it takes my part list full of packet objects and returns a list of each part number.
 
                 fullPartPrint = []
 
@@ -324,33 +310,52 @@ class node:
                     checkLength = len(checkingList)
 
                 else:
-                    partCheckList = [1, 2, 3]
-                    partGotList = []
-                    sentFromNode = partList[0].returnSentFrom()
-                    packetNumber = partList[0].returnPacketNo()
+                    streamCheckPack = partList[0]
+                    streamCheckData = streamCheckPack.returnDataType()
+                    if 'Stream' in streamCheckData:
+                        for count9 in range(len(partList)):
+                            packet = partList[count9]
+                            checkListIndex = checkingList.index(packet)
+                            if packet in self.packetList:
+                                packetListIndex = self.packetList.index(packet)
+                                checkingList.pop(checkListIndex)
+                                droppedPackList.append(packet)
+                                self.packetList.pop(packetListIndex)
+                                streamedPartsRemoved += 1
+                            else:
+                                droppedPackList.append(packet)
+                                streamedPartsRemoved += 1
+                                pass
+
+                        checkLength = len(checkingList)
+
+                    else:
+                        partCheckList = [1, 2, 3]
+                        partGotList = []
+                        sentFromNode = partList[0].returnSentFrom()
+                        packetNumber = partList[0].returnPacketNo()
 
 
-                    for miniCount in range(len(partList)):
-                        partNo = int(partList[miniCount].returnPartNo())
-                        partGotList.append(partNo)
+                        for miniCount in range(len(partList)):
+                            partNo = int(partList[miniCount].returnPartNo())
+                            partGotList.append(partNo)
 
-                    mergedList = list(set(partGotList).symmetric_difference(set(partCheckList)))
+                        mergedList = list(set(partGotList).symmetric_difference(set(partCheckList)))
 
-                    for x in range(len(partList)):
-                        checkingList.remove(partList[x])
+                        for x in range(len(partList)):
+                            checkingList.remove(partList[x])
 
-                    checkLength = len(checkingList)
+                        checkLength = len(checkingList)
 
-                    for finalCount in range(len(mergedList)):
-                        nodeList[sentFromNode].resendPart(packet,packetNumber, mergedList[finalCount])
+                        for finalCount in range(len(mergedList)):
+                            nodeList[sentFromNode].resendPart(packet,packetNumber, mergedList[finalCount])
 
         for countThree in range(len(self.packetList)):
             packet = self.packetList[countThree]
             packet.resetTimeStamp()
             packet.recordTimeArrived()
-
+        print('THIS IS NODE: ' + str(self.address) + " REMOVED THIS MANY STREAMING PACKETS: " + str(streamedPartsRemoved))
     def resendPart(self,packet, packNo, partNo):
-
         for count in range(len(self.sentPackets)):
             packet = self.sentPackets[count]
             packetNo = int(packet.returnPacketNo())
@@ -374,7 +379,6 @@ class node:
                 self.sentPackets.remove(packetDel)
 
     def recievePacket(self, packet):
-
         packet.addVisit(self.address)
         dest = packet.returnDestination()
         if self.address == dest:
@@ -383,6 +387,7 @@ class node:
             self.packRec += 1
         else:
             self.forwardList.append(packet)
+
 
     def checkListSize(self):
         return len(self.packetList)
@@ -469,8 +474,6 @@ class packet:
     def returnTimeStamp(self):
         return self.timeStamp
 
-    # def returnVisitedNodes(self):
-
     def returnPacketData(self):
         return self.data
 
@@ -479,6 +482,8 @@ def emptyResent():
      resentParts = []
 
 def main():
+    global nodeList
+
     nodeZero = node(0, 0, 0, 0, 0, 0, 0, 0)
     nodeList.append(nodeZero)
     nodeOne = node(1, 0.2, 1010, 1200, [2, 3, 4, 5, 6], [2, 2, 4, 2, 2], [0, 4, 0, 4, 4], [0, 0, 0, 0, 0])
@@ -544,20 +549,16 @@ def main():
     nodeFive.checkPacketParts()
     nodeSix.checkPacketParts()
 
-    #nodeOne.sortPackets()
-
     print('-------------------------------------------')
     print('')
 
     totalArrived = len(packetsArrived)
 
     print('TOTAL PACKETS ARRIVED AT DESTINATION: ' + str(totalArrived))
-
     print('')
     print('TOTAL PACKETS CREATED: ' + str(totalPack))
     print('TOTAL PACKETS ARRIVED: ' + str(totalArrived))
     print('-------------')
-
     print('---------------------------')
     print('PACKAGES LEFT IN NODE ONE FORWARD LIST: ' + str(len(nodeOne.forwardList)))
     print('--------------------------')
@@ -585,6 +586,8 @@ def main():
     print('TOTAL LEFT IN BUFFER FOUR: ' + str(len(nodeFourBuff)))
     print('TOTAL LEFT IN BUFFER FIVE: ' + str(len(nodeFiveBuff)))
     print('TOTAL LEFT IN BUFFER SIX: ' + str(len(nodeSixBuff)))
+    print('')
+    print('--------------------------------')
     print('SIZE OF DROPPED PACKET LIST: ' + str(len(droppedPackList)))
     print('--------------------------------')
 
@@ -603,15 +606,76 @@ def main():
     print('PACKAGES LEFT IN NODE FIVE PACKET LIST: ' + str(len(nodeFive.packetList)))
     print('--------------------------')
     print('PACKAGES LEFT IN NODE SIX PACKET LIST: ' + str(len(nodeSix.packetList)))
-
     print('============================')
+    print('---------------------------')
     print('')
     print('Total Number of resent Packets: ' + str(len(resentParts)))
-    print('-----------------------------------------')
     print('')
 
-    # Need to empty the resentPackets list so we can track how many resends happen per iteration. 
-    
+    # Here we empty resentParts list so we can check how many resends are happening per iteration.
+
     emptyResent()
 
+    findBestTimes(packetsArrived)
+    nodeTracker = []
+    bestTimeTracker = []
+
+
+    for counting in range(36):
+        nodeList = []
+        timeList = []
+        nodeTracker.append(nodeList)
+        bestTimeTracker.append(timeList)
+
+    for count13 in range(36):
+        nodeL = nodeTracker[count13]
+        timeList = bestTimeTracker[count13]
+        nodeL.append(000)
+        nodeL.append(000)
+        nodeL.append(000)
+        timeList.append(999)
+        timeList.append(999)
+        timeList.append(999)
+
+
+
+    for count11 in range(len(timeTrackerList)):
+        journeyList = timeTrackerList[count11]
+        bestNodeList = nodeTracker[count11]
+        bestTime = bestTimeTracker[count11]
+        for count12 in range(len(journeyList)):
+            packetCheck = journeyList[count12]
+            packArr = packetCheck.returnTimeArrived()
+            packCreate = packetCheck.returnTimeStamp()
+            bestNode = packetCheck.visitedList[0]
+            timeArr = packArr - packCreate
+            for count20 in range(len(bestTime)):
+                if bestTime[count20] > timeArr:
+                    bestTime[count20] = timeArr
+                    bestNodeList[count20] = bestNode
+                    break
+                elif bestTime[count20+1] > timeArr:
+                    bestTime[count20+1] = timeArr
+                    bestNodeList[count20+1] = bestNode
+                    break
+                elif bestTime[count20+2] > timeArr:
+                    bestTime[count20+2] = timeArr
+                    bestNodeList[count20+2] = bestNode
+                    break
+                else:
+                    break
+
+    finalBestList = list(zip(nodeTracker,bestTimeTracker))
+
+    print('')
+    print('Best routes around network.')
+    print('===========================')
+    print('Below is a list of 36 entries. Each entry represents a journey in the network, in order (1-1,1-2,1-3 etc).')
+    print('Within each list index is a tuple containing two more lists, the second repseting how quickly a apacket arrived, and the left representing the node that packet went through.')
+    print('Some added functionality to remove duplicate nectBestNodes needs to be added')
+    print('')
+    print('Best journey times list: ' + str(finalBestList))
+
+
 main()
+
