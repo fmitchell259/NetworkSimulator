@@ -671,7 +671,7 @@ def main():
     print('Best routes around network.')
     print('===========================')
     print('Below is a list of 36 entries. Each entry represents a journey in the network, in order (1-1,1-2,1-3 etc).')
-    print('Within each list index is a tuple containing two more lists, the second repseting how quickly a apacket arrived, and the left representing the node that packet went through.')
+    print('Within each list index is a tuple containing two more lists, the second representing how quickly a packet arrived and the left representing the node that packet must go through.')
     print('Some added functionality to remove duplicate nectBestNodes needs to be added')
     print('')
     print('Best journey times list: ' + str(finalBestList))
