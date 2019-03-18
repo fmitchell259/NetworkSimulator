@@ -17,3 +17,14 @@ After one full iteration all packets are accounted for, either in the buffer,
 the packetsArrived list, the nodes themselves or the droppedPackets list. My
 plan is to set up functionality to determine the fastest route round the network
 before implementing multiple iterations. 
+
+The system also detects packets from sent from streaming services and does not make a
+request for missing parts. Instead drops the data into my droppedPackets list. 
+
+After one iteration the system examines the time each packet
+has taken to arrive at its destination. This lets us see which node 
+is the best choice for any journey, from each node to the other, throughout
+the network. 
+
+This is in turn will allow the system to automatically adjust
+its routing table as need arises. 
