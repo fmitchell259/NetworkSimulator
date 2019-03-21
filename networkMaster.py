@@ -676,7 +676,5 @@ def main():
     for count21 in range(len(finalBestList)):
         journey = finalBestList[count21]
         print('Journey: ' + str(count21 + 1) + ' : ' + str(journey))
-
-
 main()
 
