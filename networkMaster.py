@@ -64,6 +64,56 @@ for count in range(36):
     bestTimeList = []
     timeTrackerList.append(bestTimeList)
 
+def topThree():
+
+    nodeTracker = []
+    bestTimeTracker = []
+
+
+    for counting in range(36):
+        nodeList = []
+        timeList = []
+        nodeTracker.append(nodeList)
+        bestTimeTracker.append(timeList)
+
+    for count13 in range(36):
+        nodeL = nodeTracker[count13]
+        timeList = bestTimeTracker[count13]
+        nodeL.append(0)
+        nodeL.append(0)
+        nodeL.append(0)
+        timeList.append(999)
+        timeList.append(999)
+        timeList.append(999)
+
+
+    for count11 in range(len(timeTrackerList)):
+        journeyList = timeTrackerList[count11]
+        bestNodeList = nodeTracker[count11]
+        bestTime = bestTimeTracker[count11]
+        for count12 in range(len(journeyList)):
+            packetCheck = journeyList[count12]
+            packArr = packetCheck.returnTimeArrived()
+            packCreate = packetCheck.returnTimeStamp()
+            bestNode = packetCheck.visitedList[0]
+            timeArr = packArr - packCreate
+            for count20 in range(len(bestTime)):
+                if bestTime[count20] > timeArr:
+                    bestTime[count20 + 2] = bestTime[count20 + 1]
+                    bestTime[count20 + 1] = bestTime[count20]
+                    bestTime[count20] = timeArr
+                    bestNodeList[count20 + 2] = bestNodeList[count20 + 1]
+                    bestNodeList[count20 + 1] = bestNodeList[count20]
+                    bestNodeList[count20] = bestNode
+                    break
+                else:
+                    break
+
+    finalBestList = list(zip(nodeTracker,bestTimeTracker))
+    for count21 in range(len(finalBestList)):
+        journey = finalBestList[count21]
+        print('Journey: ' + str(count21+1) + ' : ' + str(journey))
+
 
 def findBestTimes(arrivedList):
 
@@ -84,7 +134,7 @@ def findBestTimes(arrivedList):
         list = timeTrackerList[count4]
         if list == []:
             pass
-        while len(list) > 10:
+        while len(list) > 100:
             packet1 = list[0]
             packet1Time = packet1.returnTimeArrived()
             packet2 = list[1]
@@ -649,53 +699,7 @@ def main():
     emptyResent()
 
     findBestTimes(packetsArrived)
-    nodeTracker = []
-    bestTimeTracker = []
-
-
-    for counting in range(36):
-        nodeList = []
-        timeList = []
-        nodeTracker.append(nodeList)
-        bestTimeTracker.append(timeList)
-
-    for count13 in range(36):
-        nodeL = nodeTracker[count13]
-        timeList = bestTimeTracker[count13]
-        nodeL.append(0)
-        nodeL.append(0)
-        nodeL.append(0)
-        timeList.append(999)
-        timeList.append(999)
-        timeList.append(999)
-
-
-    for count11 in range(len(timeTrackerList)):
-        journeyList = timeTrackerList[count11]
-        bestNodeList = nodeTracker[count11]
-        bestTime = bestTimeTracker[count11]
-        for count12 in range(len(journeyList)):
-            packetCheck = journeyList[count12]
-            packArr = packetCheck.returnTimeArrived()
-            packCreate = packetCheck.returnTimeStamp()
-            bestNode = packetCheck.visitedList[0]
-            timeArr = packArr - packCreate
-            for count20 in range(len(bestTime)):
-                if bestTime[count20] > timeArr:
-                    bestTime[count20 + 2] = bestTime[count20 + 1]
-                    bestTime[count20 + 1] = bestTime[count20]
-                    bestTime[count20] = timeArr
-                    bestNodeList[count20 + 2] = bestNodeList[count20 + 1]
-                    bestNodeList[count20 + 1] = bestNodeList[count20]
-                    bestNodeList[count20] = bestNode
-                    break
-                else:
-                    break
-
-    finalBestList = list(zip(nodeTracker,bestTimeTracker))
-    for count21 in range(len(finalBestList)):
-        journey = finalBestList[count21]
-        print('Journey: ' + str(count21+1) + ' : ' + str(journey))
+    topThree()
 
 main()
 
