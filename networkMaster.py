@@ -64,6 +64,10 @@ for count in range(36):
     bestTimeList = []
     timeTrackerList.append(bestTimeList)
 
+    
+# Top Three function does not properly compare and shift times in my top three list. 
+# Comparison must be done from the end of the list to the start of the list. 
+
 def topThree():
 
     nodeTracker = []
