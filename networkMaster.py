@@ -117,17 +117,17 @@ def topThree():
 
             if timeArr < bestTime[2] and timeArr < bestTime[1] and timeArr > bestTime[0]:
 
-                # Save my best time and nodes in index 2.
+                # Save the best time and node in index 1.
 
                 time = bestTime[1]
                 node = bestNodeList[1]
 
-                # Shift  the best time along and set my new best time in index 2.
+                # Shift the best time along and set my new best time in index 1.
 
                 bestTime[2] = time
                 bestTime[1] = timeArr
 
-                # Set my new best node and set my new best node in index 2.
+                # Set my new best in index 1.
 
                 bestNodeList[2] = node
                 bestNodeList[1] = bestNode
