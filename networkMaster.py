@@ -117,17 +117,17 @@ def topThree():
 
             if timeArr < bestTime[2] and timeArr < bestTime[1] and timeArr > bestTime[0]:
 
-                # Save the best time and node in index 1.
+                # Save my best time and nodes in index 2.
 
                 time = bestTime[1]
                 node = bestNodeList[1]
 
-                # Shift the best time along and set my new best time in index 1.
+                # Shift  the best time along and set my new best time in index 2.
 
                 bestTime[2] = time
                 bestTime[1] = timeArr
 
-                # Set my new best in index 1.
+                # Set my new best node and set my new best node in index 2.
 
                 bestNodeList[2] = node
                 bestNodeList[1] = bestNode
@@ -187,25 +187,6 @@ def findBestTimes(arrivedList):
             packDest = packet.returnDestination()
             index = ((packFrom - 1)*6) + (packDest-1)
             timeTrackerList[index].append(packet)
-
-    for count4 in range(len(timeTrackerList)):
-        list = timeTrackerList[count4]
-        if list == []:
-            pass
-        while len(list) > 100:
-            packet1 = list[0]
-            packet1Time = packet1.returnTimeArrived()
-            packet2 = list[1]
-            packet2Time = packet2.returnTimeArrived()
-            if packet1Time < packet2Time:
-                list.pop(1)
-            elif packet1Time > packet2Time:
-                list.pop(2)
-            elif packet1Time == packet2Time:
-                pack1Route = packet1.visitedList
-                pack2Route = packet2.visitedList
-                if pack1Route == pack2Route:
-                    list.pop(1)
 
 
 class node:
