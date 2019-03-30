@@ -26,7 +26,7 @@ fourToSix = 900  # Index 23
 fiveToThree = 450  # Index 26
 fiveToFour = 800  # Index 27
 fiveToSix = 470  # Index 29
-sixToTwo = 270  # Index 31dropped
+sixToTwo = 270  # Index 31
 sixToFour = 900  # Index 33
 sixToFive = 470  # Index 35
 
@@ -64,11 +64,10 @@ for count in range(36):
     bestTimeList = []
     timeTrackerList.append(bestTimeList)
 
-    
-# Top Three function does not properly compare and shift times in my top three list. 
-# Comparison must be done from the end of the list to the start of the list. 
-
 def topThree():
+
+    # Start by creating two empty lists which will also hold a bunch of lists.
+    # The lists within nodetracker and bestTimeTracker will correspond to journeys through the network.
 
     nodeTracker = []
     bestTimeTracker = []
@@ -79,6 +78,9 @@ def topThree():
         timeList = []
         nodeTracker.append(nodeList)
         bestTimeTracker.append(timeList)
+
+    # Fill up my list of lists with [0,0,0] and [999,999,999].
+    # This gives me something to compare when iterating over my bestTimeTracker list.
 
     for count13 in range(36):
         nodeL = nodeTracker[count13]
@@ -92,28 +94,80 @@ def topThree():
 
 
     for count11 in range(len(timeTrackerList)):
+
+        # Go through timeTracker and pick up a journey list.
+        # Pick up the appropriate bestNode and bestTime list (i.e. journey 1-2, 1-3, 1-4 etc.)
+
         journeyList = timeTrackerList[count11]
         bestNodeList = nodeTracker[count11]
         bestTime = bestTimeTracker[count11]
+
         for count12 in range(len(journeyList)):
+
+            # Go through each journeyList and pick up a packet.
+            # Check where it came from, where it is going and the time it took to get there.
+            # This info all used to compare with our bestTime and bestNode list.
+
             packetCheck = journeyList[count12]
             packArr = packetCheck.returnTimeArrived()
             packCreate = packetCheck.returnTimeStamp()
             bestNode = packetCheck.visitedList[0]
             timeArr = packArr - packCreate
-            for count20 in range(len(bestTime)):
-                if bestTime[count20] > timeArr:
-                    bestTime[count20 + 2] = bestTime[count20 + 1]
-                    bestTime[count20 + 1] = bestTime[count20]
-                    bestTime[count20] = timeArr
-                    bestNodeList[count20 + 2] = bestNodeList[count20 + 1]
-                    bestNodeList[count20 + 1] = bestNodeList[count20]
-                    bestNodeList[count20] = bestNode
-                    break
-                else:
-                    break
+
+
+            if timeArr < bestTime[2] and timeArr < bestTime[1] and timeArr > bestTime[0]:
+
+                # Save my best time and nodes in index 2.
+
+                time = bestTime[1]
+                node = bestNodeList[1]
+
+                # Shift  the best time along and set my new best time in index 2.
+
+                bestTime[2] = time
+                bestTime[1] = timeArr
+
+                # Set my new best node and set my new best node in index 2.
+
+                bestNodeList[2] = node
+                bestNodeList[1] = bestNode
+
+            if timeArr < bestTime[2] and timeArr < bestTime[1] and timeArr < bestTime[0]:
+
+                # Save my two best times from index 0 and index 1
+
+                time0 = bestTime[0]
+                time1 = bestTime[1]
+
+                # Save my two best nodes from index 0 and index 1.
+
+                node0 = bestNodeList[0]
+                node1 = bestNodeList[1]
+
+                # Shift my times along by one index and put new best time in index 0.
+
+                bestTime[1] = time0
+                bestTime[2] = time1
+                bestTime[0] = timeArr
+
+                # Shift my nodes along by one index and put new best time in index 0.
+
+                bestNodeList[1] = node0
+                bestNodeList[2] = node1
+                bestNodeList[0] = bestNode
+
+            if timeArr < bestTime[2] and timeArr > bestTime[1]:
+
+                # No need to save the times or nodes from other indexes, just replace the last item in both lists with the best time and node.
+
+                bestTime[2] = timeArr
+                bestNodeList[2] = bestNode
+
+    # Using python's built in zip function we pull our two lists together to output a tuple.
+    # Each tuple represents a journey (1-2,1-3,1-4 etc) with the top three (from left to right) in each tuple.
 
     finalBestList = list(zip(nodeTracker,bestTimeTracker))
+
     for count21 in range(len(finalBestList)):
         journey = finalBestList[count21]
         print('Journey: ' + str(count21+1) + ' : ' + str(journey))
