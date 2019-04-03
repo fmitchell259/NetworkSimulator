@@ -1,7 +1,7 @@
 import random, time, collections
 
 # Initialise the lists I need for each
-# of my functions (Creating packets, sending
+# of my functions (creating packets, sending
 # packets, counting packets etc..)
 
 resentParts = []
