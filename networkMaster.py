@@ -1,5 +1,9 @@
 import random, time, collections
 
+# Initialise the lists I need for each
+# of my functions (Creating packets, sending
+# packets, counting packets etc..)
+
 resentParts = []
 nodeList = []
 dataType = ['Video', 'Textfile', 'Audio', 'Code', 'Image', 'Game Streaming', 'Download Data','Audio Streaming','Video Streaming']
@@ -12,6 +16,9 @@ processTime = [0, 0.2, 0.2, 0.2, 0.2, 1, 0.2]
 fibreLimits = []
 for count in range(36):
     fibreLimits.append(0)
+
+# These variables represent the amount of
+# packets that can go down a particular fibre link.
 
 oneToTwo = 400  # Index 1
 oneToFour = 600  # Index 2
@@ -29,6 +36,9 @@ fiveToSix = 470  # Index 29
 sixToTwo = 270  # Index 31
 sixToFour = 900  # Index 33
 sixToFive = 470  # Index 35
+
+# The figures are then added to each list within
+# the containing fibreTrackerList.
 
 fibreLimits[1] = oneToTwo
 fibreLimits[3] = oneToFour
@@ -59,6 +69,8 @@ for count in range(36):
     transferList.append(l)
 for count in range(36):
     fibreTracker.append(0)
+
+# Create another list of lists to find best times.
 
 for count in range(36):
     bestTimeList = []
@@ -175,6 +187,11 @@ def topThree():
 
 def findBestTimes(arrivedList):
 
+    # This function DOES NOT fund the best times.
+    # it simply sorts the packets into the
+    # timeTracker list of lists ready for the function
+    # topThree to find the BEST times.
+
     for count2 in range(len(arrivedList)):
         packetList = arrivedList[count2]
         packet = packetList[0]
@@ -188,10 +205,9 @@ def findBestTimes(arrivedList):
             index = ((packFrom - 1)*6) + (packDest-1)
             timeTrackerList[index].append(packet)
 
-
 class node:
-    def __init__(self, address, processTime, nodeSize, bufferSize, coreRoute, opOne, opTwo, opThree):
 
+    def __init__(self, address, processTime, nodeSize, bufferSize, coreRoute, opOne, opTwo, opThree):
         self.address = address
         self.nodeSize = nodeSize
         self.processTime = processTime
@@ -227,6 +243,9 @@ class node:
 
     def packetGen(self):
 
+        # Create 1000 packets, made up of 3 sub-packets
+        # for each node.
+
         packetCount = 1000
         # packetCount = random.randint(1,self.nodeSize)
         returnCount = 0
@@ -244,7 +263,6 @@ class node:
                 d = random.choice(dataType)
                 for count in range(3):
                     timeStamp = time.time()
-                    #print('TIMESTAMP: ' + str(timeStamp))
                     partNo = str(str(count + 1))
                     p = packet(sentFrom, sendTo, data, d, timeStamp, partNo, packetNo)
                     self.forwardList.append(p)
@@ -271,7 +289,17 @@ class node:
 
     def sortPackets(self):
 
+        # Import my global fibreTracker list, this list limits
+        # the amount of packets that can go down a fibre link.
+
+        # Also import global transferList, this a list of lists
+        # representing journey's 1-2, 1-3, 1-4 etc..
+
         global fibreTracker
+        global transferList
+
+        # Before doing anything a node checks its buffer and brings
+        # packets from there into its buffer list.
 
         buffCount = self.checkBuffSize()
         if buffCount > 0:
@@ -279,10 +307,25 @@ class node:
                 self.forwardList.append(self.bufferList[count])
             self.bufferList = []
 
+        # Set all counters to zer to keep track of what is going where.
+
         transferCount = 0
         packetsTransList = 0
         packetsTransBuff = 0
         packetsTransDrop = 0
+
+        # My sorting algorithm works in two ways. Because my transferList
+        # is a list of lists, I needed a wee bit of maths to pick up the
+        # correct list. This works one way when the address is 1 and a
+        # slightly different way when the address is greater than 1.
+
+        # The following block sorts packets from a node's forwardList and
+        # puts them in their appropriate transferList list. This is depending
+        # on the nodes routing table, the size of the fibreLimit, and
+        # the size of the buffer.
+
+        # We also create a copy of all the packets sent to allow other nodes
+        # to request a re-send if a packet has not arrived.
 
         if self.address == 1:
             for count in range(len(self.forwardList)):
@@ -307,6 +350,10 @@ class node:
                             else:
                                 droppedPackList.append(self.forwardList[count])
                                 packetsTransDrop += 1
+
+        # As mentioned above, the same code block is repeated when the address
+        # is greater than 1.
+
         else:
             for count in range(len(self.forwardList)):
                 packet = self.forwardList[count]
@@ -330,17 +377,26 @@ class node:
                             else:
                                 droppedPackList.append(self.forwardList[count])
                                 packetsTransDrop += 1
+
+        # Empty the forwardList, ready for the next iteration of packets.
+
         self.forwardList = []
+
+        # Return total packets transferred out of node.
 
         return transferCount
 
     def removePacket(self):
+
         if self.packetList == []:
             pass
         else:
             self.packetList.pop()
 
     def checkRemove(self, packetNo, sentFrom):
+
+        # A small function to remove packets
+        # from a node's packetList.
 
         delList = []
         delPack = 0
@@ -362,18 +418,34 @@ class node:
 
     def checkPacketParts(self):
 
+        # Create a checkingList, this will be populated by
+        # packets that have been waiting longer than 2 seconds.
+
         checkingList = []
         now = time.time()
         resendParts = 0
         streamedPartsRemoved = 0
+
+        # Check if a packet in a nodes packetList has been waiting longer
+        # then two seconds, if so, add it to checkingList.
 
         for count in range(len(self.packetList)):
             packet = self.packetList[count]
             if abs(now - packet.timeStamp) > 2.0:
                 checkingList.append(packet)
 
+        # Set my control variable checkLength, this will be used
+        # to check each packet in the checkingList has every part.
+
         checkLength = len(checkingList)
 
+
+        # Iterate over checkingList until all packets have beeb checked
+        # for all parts.
+
+        # We put each packet in a partList and then check for all three
+        # parts. If we find all three the partList containing all three
+        # of our packet parts is added to global packetsArrived list.
 
         while checkLength > 0:
                 partList = []
@@ -382,6 +454,7 @@ class node:
                 packFrom = packet.returnSentFrom()
                 packetNo = packet.returnPacketNo()
                 partList.append(packet)
+
                 for countThree in range(1, checkLength):
                     packet2 = checkingList[countThree]
                     packet2No = packet2.returnPacketNo()
@@ -389,11 +462,6 @@ class node:
                     pack2From = packet2.returnSentFrom()
                     if packet2No == packetNo and pack2From == packFrom and packet2Part != partNo:
                         partList.append(packet2)
-
-                fullPartPrint = []
-
-                for x in range(len(partList)):
-                    fullPartPrint.append(partList[x].returnPartNo())
 
                 if len(partList) == 3:
                     packetsArrived.append(partList)
@@ -405,11 +473,29 @@ class node:
                     for x in range(3):
                         checkingList.remove(partList[x])
 
+                    # Always adjust checkLength when removing packets.
+
                     checkLength = len(checkingList)
 
                 else:
+
+                    # If we don't have all three parts then we need to
+                    # first check if the packet is sa 'Streaming' packet.
+
+                    # If the packet is not a streaming packet we must
+                    # request a re-send.
+
+                    # Pick up one of the parts of the packet in partList.
+                    # Check if this packet has 'Stream' in it's data-type.
+
                     streamCheckPack = partList[0]
                     streamCheckData = streamCheckPack.returnDataType()
+
+                    # If we find the word 'Stream' then remove that part.
+                    # Also remove this packet from the packetList.
+                    # Streaming packets are lossy data and as such can be dropped
+
+
                     if 'Stream' in streamCheckData:
                         for count9 in range(len(partList)):
                             packet = partList[count9]
@@ -425,7 +511,15 @@ class node:
                                 streamedPartsRemoved += 1
                                 pass
 
+                        # Once 'Stream' packets have been removed we need to
+                        # re-assess checkLength, this variable is the control
+                        # within the while loop.
+
                         checkLength = len(checkingList)
+
+                    # If the packet is not a 'Streaming' packet we then
+                    # request a re-send. This is done by comparing with my
+                    # partCheckList which contains [1,2,3].
 
                     else:
                         partCheckList = [1, 2, 3]
@@ -434,12 +528,25 @@ class node:
                         packetNumber = partList[0].returnPacketNo()
 
 
+                        # The partList contains packet objects so a loop is required
+                        # to produce a partGotList of each packet's part number.
+
                         for miniCount in range(len(partList)):
                             partNo = int(partList[miniCount].returnPartNo())
                             partGotList.append(partNo)
 
 
+                        # Using 'symemetric_difference' and 'set' we can then produce a
+                        # final list of the parts we need to request from various nodes.
+
+                        # This is mergingo my checkPartParts and my partGotList, to give
+                        # me mergedList, showing the differences between the two. i.e
+                        # the parts I need to re-request.
+
                         mergedList = list(set(partGotList).symmetric_difference(set(partCheckList)))
+
+                        # The following just allows me to count how many packets
+                        # are being re-sent.
 
                         howMany = 3 - len(mergedList)
 
@@ -448,13 +555,25 @@ class node:
                         elif howMany == 2:
                             resendParts += 2
 
+                        # Go over my checking list and remove the packets
+                        # I havein the partList.
+
                         for x in range(len(partList)):
                             checkingList.remove(partList[x])
 
+                        # Always adjust my control variable (checkLength) when removing
+                        # packets from the checkingList.
+
                         checkLength = len(checkingList)
 
+                        # Finally request a re-send of one or two parts of a packet.
+
                         for finalCount in range(len(mergedList)):
-                            nodeList[sentFromNode].resendPart(packet,packetNumber, mergedList[finalCount])
+                             nodeList[sentFromNode].resendPart(packet,packetNumber, mergedList[finalCount])
+
+
+        # Lastly we need to reset the timeStamp on the packets
+        # waiting for a re-send to arrive.
 
         for countThree in range(len(self.packetList)):
             packet = self.packetList[countThree]
@@ -463,6 +582,10 @@ class node:
         print('THIS IS NODE: ' + str(self.address) + " REMOVED THIS MANY STREAM PACKETS: " + str(streamedPartsRemoved))
 
     def resendPart(self,packet, packNo, partNo):
+
+        # Iterate over a nodes sentPackets list and
+        # find the missing packet. Consult that nodes
+        # routing table and re-send.
 
         for count in range(len(self.sentPackets)):
             packet = self.sentPackets[count]
@@ -481,6 +604,9 @@ class node:
                             nodeList[randomNode].recievePacket(packet)
                             resentParts.append(packet)
 
+        # Once a re-send has been completed, delete that packet
+        # from the sentPackets list.
+
         for count4 in range(len(self.sentPackets)):
             packetDel = self.sentPackets[count4]
             if packet == packetDel:
@@ -489,8 +615,22 @@ class node:
 
     def recievePacket(self, packet):
 
+        # As soon as a packet is received we add that
+        # node to the packets visitedList. This lets us
+        # keep track of which nodes a packet has visited.
+
         packet.addVisit(self.address)
+
+        # Work out where this packet is destined for?
+
         dest = packet.returnDestination()
+
+        # If the packet has noe arrived, record its time
+        # of arrival and add to that nodes packetList.
+
+        # If the packet still needs to continue on its
+        # journey put the packet in that nodes forwardList.
+
         if self.address == dest:
             packet.recordTimeArrived()
             self.packetList.append(packet)
@@ -509,11 +649,24 @@ class node:
 
     def sendPackets(self):
 
+        # Import my transferList. This is my list of lists
+        # representing the journey's through the network.
+        # After a node has sorted its packets these lists are all
+        # full of packets ready to be sent to their respective nodes.
+
         global transferList
+
+        # This secondRange is the small piece of maths I have
+        # used to pick up the right list of lists index. This
+        # only needs to be used when the address is greater than 1.
 
         secondRange = (self.address - 1) * numberOfNodes
 
         packetsMoved = 0
+
+        # Iterate over trasnferList, pick up a journey list
+        # and send the packets on their way.
+
         if self.address == 1:
             for count in range(numberOfNodes):
                 destList = transferList[count]
@@ -529,12 +682,13 @@ class node:
                     nodeList[destNode].recievePacket(destList[countTwo])
                     packetsMoved += 1
 
+        # Clear all my lists for the next iteration.
+
         for count3 in range(len(transferList)):
             list = transferList[count3]
             list = []
 
 class packet:
-
     def __init__(self, sentFrom, sendTo, data, dataType, timeStamp, partNo, packetNo):
         self.sentFrom = sentFrom
         self.sendTo = sendTo
@@ -548,70 +702,72 @@ class packet:
         self.visitedList = []
         self.resent = False
 
-    def returnTimeArrived(self):
+    # Below are a series of small functions
+    # that return various information about a packet.
 
+    def returnTimeArrived(self):
         return self.timeArrived
 
     def returnPacketNo(self):
-
         return self.packetNo
 
     def returnPartNo(self):
-
         return self.partNo
 
     def addVisit(self, nodeNumber):
-
         self.visitedList.append(nodeNumber)
 
     def returnVisitedList(self):
-
         return self.visitedList
 
     def resetTimeStamp(self):
-
         timeStamp = time.time()
         self.timeStamp = timeStamp
 
     def recordTimeArrived(self):
-
         now = time.time()
         self.timeArrived = now
 
     def returnSentFrom(self):
-
         return self.sentFrom
 
     def returnDataType(self):
-
         return self.dataType
 
     def returnSendTo(self):
-
         return self.sendTo
 
     def returnDestination(self):
-
         return self.sendTo
 
     def returnTimeStamp(self):
-
         return self.timeStamp
 
-    # def returnVisitedNodes(self):
-
     def returnPacketData(self):
-
         return self.data
 
 def emptyResent():
 
+    # I have a global resent list to keep track
+    # of how may packets get resent, by each node,
+    # per iteration.
+
+    # This list needs to emptied before the next
+    # iteration.
+
      global resentParts
+
      resentParts = []
 
 def main():
 
+    # Import global nodeList.
+    # This allows me to access all the methods associated with any particular node from anywhere within the system.
+
     global nodeList
+
+    # Create my six nodes.
+    # Node zero is created and never used to allow for consistent numbers.
 
     nodeZero = node(0, 0, 0, 0, 0, 0, 0, 0)
     nodeList.append(nodeZero)
@@ -627,6 +783,11 @@ def main():
     nodeList.append(nodeFive)
     nodeSix = node(6, 0.2, 1010, 1270, [1, 2, 3, 4, 5], [2, 2, 2, 4, 5], [4, 0, 4, 0, 0], [5, 0, 5, 0, 0])
     nodeList.append(nodeSix)
+
+    # Create packets within each node.
+    # A node cannot create a packet destined for itself.
+    # Print statements to allow developer to track packets.
+
     nodeOneGen = nodeOne.packetGen()
     print(str(nodeOneGen) + ' packets generated in Node 1.')
     nodeTwoGen = nodeTwo.packetGen()
@@ -641,10 +802,13 @@ def main():
     print(str(nodeSixGen) + ' packets generated in Node 6.')
 
     totalPack = nodeOneGen + nodeTwoGen + nodeThreeGen + nodeFourGen + nodeFiveGen + nodeSixGen
-
-    # We now have a self.totalPacketArrived which will keep track of the packages that have reached their destination.
-
     print(' TOtal packages created : ' + str(totalPack))
+
+    # Start the process of sending packets.
+    # Each node sorts the packets in their packetList
+    # The packets get transferred to a global transferList, sorted into journey (1-2, 3-5, 4-2 etc...).
+    # Packets are then taken from each respective journey list and sent to their respective nodes.
+    # The sleep function aims to imitate the time for a node to process the data.
 
     nodeOne.sortPackets()
     nodeOne.sendPackets()
@@ -670,6 +834,11 @@ def main():
     nodeSix.sendPackets()
     time.sleep(processTime[6])
 
+    # When all packets have been sorted and sent they are held in a nodes checkingList.
+    # This allows for a node to check that all 'parts' of a packet have been received.
+    # If a packet has been waiting longer than 2 seconds it will be checked for completeness.
+    # If a packet is complete it will be removed from the node completely and added to the global packetsArrived list.
+    # Items in this list comprise a list of three 'parts' of a packet (which are packet objects themselves).
 
     nodeOne.checkPacketParts()
     nodeTwo.checkPacketParts()
@@ -677,6 +846,14 @@ def main():
     nodeFour.checkPacketParts()
     nodeFive.checkPacketParts()
     nodeSix.checkPacketParts()
+
+    # The following print statements and method calls allow the developer to ensure
+    # their are no missing packets, or duplicate packets, within the system.
+
+    # The total packets in a nodes packetList, bufferlist and any packets dropped should
+    # be equal to the total packets created plus the number of packets re-requested.
+
+
     print('-------------------------------------------\n')
 
     totalArrived = len(packetsArrived)
@@ -735,9 +912,26 @@ def main():
     print('--------------------------\n')
     print('Total Number of resent Packets: ' + str(len(resentParts)) + '\n')
 
+    # After each iteration I need to empty the list that collects each resent part.
+    # This global list is used to count the number of packets a node resends.
+
+    # After one iteration I need to reset this list to keep count of the total packets
+    # resent with multiple iterations.
+
     emptyResent()
 
+    # The function findBestTimes gets packets out of the packetsArrived list and
+    # puts them into my timeTracker list of lists (a list of journeys).
+
     findBestTimes(packetsArrived)
+
+    # The function topThree iterates over each sorted timeTracker packet and creates
+    # a top three fastest packets for each journey in the network.
+
+    # A packet can make a multi-hop journey with one iteration because the system
+    # sorts and sends in order. So if a packet follows a chronological routing it
+    # will naturally arrive at its destination.
+
     topThree()
 
 main()
