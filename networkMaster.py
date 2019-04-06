@@ -1,7 +1,7 @@
 import random, time, collections
 
 # Initialise the lists I need for each
-# of my functions (creating packets, sending
+# of my functions (Creating packets, sending
 # packets, counting packets etc..)
 
 resentParts = []
@@ -11,7 +11,7 @@ packetsArrived = []
 numberOfNodes = 6
 processTime = [0, 0.2, 0.2, 0.2, 0.2, 1, 0.2]
 
-## Fibre Link Limitations ##
+# Fibre Link Limitations.
 
 fibreLimits = []
 for count in range(36):
@@ -84,7 +84,6 @@ def topThree():
     nodeTracker = []
     bestTimeTracker = []
 
-
     for counting in range(36):
         nodeList = []
         timeList = []
@@ -103,7 +102,6 @@ def topThree():
         timeList.append(999)
         timeList.append(999)
         timeList.append(999)
-
 
     for count11 in range(len(timeTrackerList)):
 
@@ -125,7 +123,6 @@ def topThree():
             packCreate = packetCheck.returnTimeStamp()
             bestNode = packetCheck.visitedList[0]
             timeArr = packArr - packCreate
-
 
             if timeArr < bestTime[2] and timeArr < bestTime[1] and timeArr > bestTime[0]:
 
@@ -207,7 +204,7 @@ def findBestTimes(arrivedList):
 
 class node:
 
-    def __init__(self, address, processTime, nodeSize, bufferSize, coreRoute, opOne, opTwo, opThree):
+    def __init__(self, address, processTime, nodeSize, bufferSize, routeTable):
         self.address = address
         self.nodeSize = nodeSize
         self.processTime = processTime
@@ -215,10 +212,7 @@ class node:
         self.packetList = []
         self.bufferList = []
         self.sentPackets = []
-        self.coreRoute = coreRoute
-        self.opOne = opOne
-        self.opTwo = opTwo
-        self.opThree = opThree
+        self.routTable = routeTable
         self.packRec = 0
         self.packDrop = 0
         self.packBuff = 0
@@ -275,17 +269,11 @@ class node:
 
     def returnRoutingPath(self, dest):
 
-        possibleNodes = []
-        for countOne in range(len(self.coreRoute)):
-            if self.coreRoute[countOne] == dest:
-                if self.opOne[countOne] != 0:
-                    possibleNodes.append(self.opOne[countOne])
-                if self.opTwo[countOne] != 0:
-                    possibleNodes.append(self.opTwo[countOne])
-                if self.opThree[countOne] != 0:
-                    possibleNodes.append(self.opThree[countOne])
+        # Return a route table based on destination.
 
-        return possibleNodes
+        routeTable = self.routTable[dest]
+
+        return routeTable
 
     def sortPackets(self):
 
@@ -332,51 +320,42 @@ class node:
                 packet = self.forwardList[count]
                 dest = packet.returnDestination()
                 possibleNodes = self.returnRoutingPath(dest)
-                randomNode = 0
-                while randomNode == 0:
-                    randomNode = random.choice(possibleNodes)
-                    if randomNode != 0:
-                        index = randomNode -1
-                        if fibreTracker[index] < fibreLimits[index]:
-                            fibreTracker[index] += 1
-                            transferList[index].append(packet)
-                            self.sentPackets.append(packet)
-                            packetsTransList += 1
-                        else:
-                            buffCount = self.checkBuffSize()
-                            if buffCount < self.bufferSize:
-                                self.bufferList.append(self.forwardList[count])
-                                packetsTransBuff += 1
-                            else:
-                                droppedPackList.append(self.forwardList[count])
-                                packetsTransDrop += 1
-
-        # As mentioned above, the same code block is repeated when the address
-        # is greater than 1.
+                randomNode = random.choice(possibleNodes)
+                index = randomNode - 1
+                if fibreTracker[index] < fibreLimits[index]:
+                    fibreTracker[index] += 1
+                    transferList[index].append(packet)
+                    self.sentPackets.append(packet)
+                    packetsTransList += 1
+                else:
+                    buffCount = self.checkBuffSize()
+                    if buffCount < self.bufferSize:
+                        self.bufferList.append(self.forwardList[count])
+                        packetsTransBuff += 1
+                    else:
+                        droppedPackList.append(self.forwardList[count])
+                        packetsTransDrop += 1
 
         else:
             for count in range(len(self.forwardList)):
                 packet = self.forwardList[count]
                 dest = packet.returnDestination()
                 possibleNodes = self.returnRoutingPath(dest)
-                randomNode = 0
-                while randomNode == 0:
-                    randomNode = random.choice(possibleNodes)
-                    if randomNode != 0:
-                        index = ((self.address - 1) * numberOfNodes) + (randomNode-1)
-                        if fibreTracker[index] < fibreLimits[index]:
-                            fibreTracker[index] += 1
-                            transferList[index].append(packet)
-                            self.sentPackets.append(packet)
-                            packetsTransList += 1
-                        else:
-                            buffCount = self.checkBuffSize()
-                            if buffCount < self.bufferSize:
-                                self.bufferList.append(self.forwardList[count])
-                                packetsTransBuff += 1
-                            else:
-                                droppedPackList.append(self.forwardList[count])
-                                packetsTransDrop += 1
+                randomNode = random.choice(possibleNodes)
+                index = ((self.address - 1) * numberOfNodes) + (randomNode - 1)
+                if fibreTracker[index] < fibreLimits[index]:
+                    fibreTracker[index] += 1
+                    transferList[index].append(packet)
+                    self.sentPackets.append(packet)
+                    packetsTransList += 1
+                else:
+                    buffCount = self.checkBuffSize()
+                    if buffCount < self.bufferSize:
+                        self.bufferList.append(self.forwardList[count])
+                        packetsTransBuff += 1
+                    else:
+                        droppedPackList.append(self.forwardList[count])
+                        packetsTransDrop += 1
 
         # Empty the forwardList, ready for the next iteration of packets.
 
@@ -439,7 +418,6 @@ class node:
 
         checkLength = len(checkingList)
 
-
         # Iterate over checkingList until all packets have beeb checked
         # for all parts.
 
@@ -495,7 +473,6 @@ class node:
                     # Also remove this packet from the packetList.
                     # Streaming packets are lossy data and as such can be dropped
 
-
                     if 'Stream' in streamCheckData:
                         for count9 in range(len(partList)):
                             packet = partList[count9]
@@ -527,7 +504,6 @@ class node:
                         sentFromNode = partList[0].returnSentFrom()
                         packetNumber = partList[0].returnPacketNo()
 
-
                         # The partList contains packet objects so a loop is required
                         # to produce a partGotList of each packet's part number.
 
@@ -535,11 +511,10 @@ class node:
                             partNo = int(partList[miniCount].returnPartNo())
                             partGotList.append(partNo)
 
-
                         # Using 'symemetric_difference' and 'set' we can then produce a
                         # final list of the parts we need to request from various nodes.
 
-                        # This is mergingo my checkPartParts and my partGotList, to give
+                        # This is merging my checkPartParts and my partGotList, to give
                         # me mergedList, showing the differences between the two. i.e
                         # the parts I need to re-request.
 
@@ -556,7 +531,7 @@ class node:
                             resendParts += 2
 
                         # Go over my checking list and remove the packets
-                        # I havein the partList.
+                        # I have in the partList.
 
                         for x in range(len(partList)):
                             checkingList.remove(partList[x])
@@ -571,9 +546,7 @@ class node:
                         for finalCount in range(len(mergedList)):
                              nodeList[sentFromNode].resendPart(packet,packetNumber, mergedList[finalCount])
 
-
-        # Lastly we need to reset the timeStamp on the packets
-        # waiting for a re-send to arrive.
+        # Reset time-stamps on packets awaiting a re-send.
 
         for countThree in range(len(self.packetList)):
             packet = self.packetList[countThree]
@@ -664,7 +637,7 @@ class node:
 
         packetsMoved = 0
 
-        # Iterate over trasnferList, pick up a journey list
+        # Iterate over transferList, pick up a journey list
         # and send the packets on their way.
 
         if self.address == 1:
@@ -769,19 +742,19 @@ def main():
     # Create my six nodes.
     # Node zero is created and never used to allow for consistent numbers.
 
-    nodeZero = node(0, 0, 0, 0, 0, 0, 0, 0)
+    nodeZero = node(0, 0, 0, 0, 0)
     nodeList.append(nodeZero)
-    nodeOne = node(1, 0.2, 1010, 1200, [2, 3, 4, 5, 6], [2, 2, 4, 2, 2], [0, 4, 0, 4, 4], [0, 0, 0, 0, 0])
+    nodeOne = node(1, 0.2, 1010, 1200, {1: [], 2: [2], 3: [2,4], 4: [4], 5: [2, 4], 6: [2, 4]})
     nodeList.append(nodeOne)
-    nodeTwo = node(2, 0.2, 1010, 800, [1, 3, 4, 5, 6], [1, 3, 1, 1, 6], [0, 0, 3, 3, 0], [0, 0, 6, 6, 0])
+    nodeTwo = node(2, 0.2, 1010, 800, {1: [1], 2: [], 3: [3], 4: [1, 3, 6], 5: [1, 3, 6], 6: [6]})
     nodeList.append(nodeTwo)
-    nodeThree = node(3, 0.2, 1010, 1100, [1, 2, 4, 5, 6], [2, 2, 2, 5, 2], [5, 0, 5, 0, 5], [0, 0, 0, 0, 0])
+    nodeThree = node(3, 0.2, 1010, 1100, {1: [2, 5], 2: [2], 3: [], 4: [2, 5], 5: [5], 6: [2, 5]})
     nodeList.append(nodeThree)
-    nodeFour = node(4, 0.2, 1010, 1500, [1, 2, 3, 5, 6], [1, 1, 1, 5, 6], [0, 5, 5, 0, 0], [0, 6, 6, 0, 0])
+    nodeFour = node(4, 0.2, 1010, 1500, {1: [1], 2: [1, 5, 6], 3: [1, 5, 6], 4: [], 5: [5], 6: [6]})
     nodeList.append(nodeFour)
-    nodeFive = node(5, 1, 1010, 650, [1, 2, 3, 4, 6], [3, 3, 3, 4, 6], [4, 4, 0, 0, 0], [6, 6, 0, 0, 0])
+    nodeFive = node(5, 1, 1010, 650, {1: [3, 4, 6], 2: [3, 4, 6], 3: [3], 4: [4], 5: [], 6: [6]})
     nodeList.append(nodeFive)
-    nodeSix = node(6, 0.2, 1010, 1270, [1, 2, 3, 4, 5], [2, 2, 2, 4, 5], [4, 0, 4, 0, 0], [5, 0, 5, 0, 0])
+    nodeSix = node(6, 0.2, 1010, 1270, {1: [2, 4, 5], 2: [2], 3: [2, 4, 5], 4: [4], 5: [5], 6: []})
     nodeList.append(nodeSix)
 
     # Create packets within each node.
@@ -804,11 +777,15 @@ def main():
     totalPack = nodeOneGen + nodeTwoGen + nodeThreeGen + nodeFourGen + nodeFiveGen + nodeSixGen
     print(' TOtal packages created : ' + str(totalPack))
 
-    # Start the process of sending packets.
-    # Each node sorts the packets in their packetList
-    # The packets get transferred to a global transferList, sorted into journey (1-2, 3-5, 4-2 etc...).
-    # Packets are then taken from each respective journey list and sent to their respective nodes.
-    # The sleep function aims to imitate the time for a node to process the data.
+    # Start the process of sending packets.Each node sorts the packets
+    # in their packetList.
+    #
+    # The packets get transferred to a global transferList, sorted into
+    # journey (1-2, 3-5, 4-2 etc...).
+    #
+    # Packets are then taken from each respective journey list and sent
+    # to their respective nodes. The sleep function aims to imitate the
+    # time for a node to process the data.
 
     nodeOne.sortPackets()
     nodeOne.sendPackets()
@@ -852,7 +829,6 @@ def main():
 
     # The total packets in a nodes packetList, bufferlist and any packets dropped should
     # be equal to the total packets created plus the number of packets re-requested.
-
 
     print('-------------------------------------------\n')
 
@@ -935,4 +911,5 @@ def main():
     topThree()
 
 main()
+
 
