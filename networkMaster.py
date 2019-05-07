@@ -170,7 +170,8 @@ def top_three_journey():
 
             if time_arrived < best_time[2] and time_arrived > best_time[1]:
 
-                # No need to save the times or nodes from other indexes, just replace the last item in both lists with the best time and node.
+                # No need to save the times or nodes from other indexes,
+                # just replace the last item in both lists with the best time and node.
 
                 best_time[2] = time_arrived
                 best_node_list[2] = best_node
@@ -301,7 +302,7 @@ class node:
                 self.forward_list.append(self.buffer_list[count])
             self.buffer_list = []
 
-        # Set all counters to zer to keep track of what is going where.
+        # Set all counters to zero to keep track of what is going where.
 
         transfer_count = 0
         packets_transfer_list = 0
@@ -451,10 +452,9 @@ class node:
 
                     # Always adjust check_length when removing packets.
 
-                    check_length = len(checking_list)
+                    check_length = check_length - 3
 
                 else:
-
                     # If we don't have all three parts then we need to
                     # first check if the packet is sa 'Streaming' packet.
 
@@ -472,30 +472,11 @@ class node:
                     # Streaming packets are lossy data and as such can be dropped
 
                     if 'Stream' in stream_check_data:
-                        for count9 in range(len(part_list)):
-                            packet = part_list[count9]
-                            check_list_index = checking_list.index(packet)
-                            if packet in self.packet_list:
-                                packet_list_index = self.packet_list.index(packet)
-                                checking_list.pop(check_list_index)
-                                dropped_pack_list.append(packet)
-                                self.packet_list.pop(packet_list_index)
+                        for pack in part_list:
+                            if pack in checking_list:
+                                checking_list.remove(pack)
                                 streamed_parts_removed += 1
-                            else:
-                                dropped_pack_list.append(packet)
-                                streamed_parts_removed += 1
-                                pass
-
-                        # Once 'Stream' packets have been removed we need to
-                        # re-assess check_length, this variable is the control
-                        # within the while loop.
-
-                        check_length = len(checking_list)
-
-                    # If the packet is not a 'Streaming' packet we then
-                    # request a re-send. This is done by comparing with my
-                    # part_check_list which contains [1,2,3].
-
+                                check_length = check_length - 1
                     else:
                         part_check_list = [1, 2, 3]
                         part_got_list = []
@@ -579,11 +560,8 @@ class node:
         # Once a re-send has been completed, delete that packet
         # from the sentPackets list.
 
-        for count4 in range(len(self.sent_packets)):
-            packet_del = self.sent_packets[count4]
-            if packet == packet_del:
-                self.sent_packets.remove(packet_del)
-
+        if packet in self.sent_packets:
+            self.sent_packets.remove(packet)
 
     def receive_packet(self, packet):
 
@@ -759,48 +737,50 @@ def main():
     # to their respective nodes. The sleep function aims to imitate the
     # time for a node to process the data.
 
-    node_one.sort_packets()
-    node_one.send_packets()
-    time.sleep(process_time[1])
+    for count in range(5):
+        node_one.sort_packets()
+        node_one.send_packets()
+        time.sleep(process_time[1])
 
-    node_two.sort_packets()
-    node_two.send_packets()
-    time.sleep(process_time[2])
+        node_two.sort_packets()
+        node_two.send_packets()
+        time.sleep(process_time[2])
 
-    node_three.sort_packets()
-    node_three.send_packets()
-    time.sleep(process_time[3])
+        node_three.sort_packets()
+        node_three.send_packets()
+        time.sleep(process_time[3])
 
-    node_four.sort_packets()
-    node_four.send_packets()
-    time.sleep(process_time[4])
+        node_four.sort_packets()
+        node_four.send_packets()
+        time.sleep(process_time[4])
 
-    node_five.sort_packets()
-    node_five.send_packets()
-    time.sleep(process_time[5])
+        node_five.sort_packets()
+        node_five.send_packets()
+        time.sleep(process_time[5])
 
-    node_six.sort_packets()
-    node_six.send_packets()
-    time.sleep(process_time[6])
+        node_six.sort_packets()
+        node_six.send_packets()
+        time.sleep(process_time[6])
 
-    # When all packets have been sorted and sent they are held in a nodes checking_list.
-    # This allows for a node to check that all 'parts' of a packet have been received.
-    # If a packet has been waiting longer than 2 seconds it will be checked for completeness.
-    # If a packet is complete it will be removed from the node completely and added to the global packets_arrived list.
-    # Items in this list comprise a list of three 'parts' of a packet (which are packet objects themselves).
+        # When all packets have been sorted and sent they are held in a nodes checking_list.
+        # This allows for a node to check that all 'parts' of a packet have been received.
+        # If a packet has been waiting longer than 2 seconds it will be checked for completeness.
+        # If a packet is complete it will be removed from the node completely and added to the global packets_arrived list.
+        # Items in this list comprise a list of three 'parts' of a packet (which are packet objects themselves).
 
-    node_one.check_packet_parts()
-    node_two.check_packet_parts()
-    node_three.check_packet_parts()
-    node_four.check_packet_parts()
-    node_five.check_packet_parts()
-    node_six.check_packet_parts()
 
-    # The following print statements and method calls allow the developer to ensure
-    # their are no missing packets, or duplicate packets, within the system.
+        node_one.check_packet_parts()
+        node_two.check_packet_parts()
+        node_three.check_packet_parts()
+        node_four.check_packet_parts()
+        node_five.check_packet_parts()
+        node_six.check_packet_parts()
 
-    # The total packets in a nodes packetList, bufferlist and any packets dropped should
-    # be equal to the total packets created plus the number of packets re-requested.
+        # The following print statements and method calls allow the developer to ensure
+        # their are no missing packets, or duplicate packets, within the system.
+
+        # The total packets in a nodes packetList, bufferlist and any packets dropped should
+        # be equal to the total packets created plus the number of packets re-requested.
 
     print('-------------------------------------------\n')
 
@@ -883,5 +863,6 @@ def main():
     top_three_journey()
 
 main()
+
 
 
