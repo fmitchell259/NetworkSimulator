@@ -20,22 +20,22 @@ for count in range(36):
 # These variables represent the amount of
 # packets that can go down a particular fibre link.
 
-one_to_two = 400  # Index 1
-one_to_four = 600  # Index 2
-two_to_three = 550  # Index 8
-two_to_one = 400  # Index 6
-two_to_six = 270  # Index 10
-three_to_two = 500  # Index 13
-three_to_five = 450  # Index 16
-four_to_one = 600  # Index 18
-four_to_five = 800  # Index 22
-four_to_six = 900  # Index 23
-five_to_three = 450  # Index 26
-five_to_four = 800  # Index 27
-five_to_six = 470  # Index 29
-six_to_two = 270  # Index 31
-six_to_four = 900  # Index 33
-six_to_five = 470  # Index 35
+one_to_two = 4000  # Index 1
+one_to_four = 6000  # Index 2
+two_to_three = 5500  # Index 8
+two_to_one = 4000  # Index 6
+two_to_six = 2700  # Index 10
+three_to_two = 5000  # Index 13
+three_to_five = 4500  # Index 16
+four_to_one = 6000  # Index 18
+four_to_five = 8000  # Index 22
+four_to_six = 9000  # Index 23
+five_to_three = 4500  # Index 26
+five_to_four = 8000  # Index 27
+five_to_six = 4700  # Index 29
+six_to_two = 2700  # Index 31
+six_to_four = 9000  # Index 33
+six_to_five = 4700  # Index 35
 
 # The figures are then added to each list within
 # the containing fibreTrackerList.
@@ -124,6 +124,7 @@ def top_three_journey():
             packet_check = journey_list[count12]
             pack_arrived = packet_check.return_time_arrived()
             pack_create = packet_check.return_time_stamp()
+
             best_node = packet_check.visited_list[0]
             time_arrived = pack_arrived - pack_create
 
@@ -186,7 +187,6 @@ def top_three_journey():
         print('Journey: ' + str(count21+1) + ' : ' + str(journey))
 
 
-
 def find_best_times(arrived_list):
 
     # This function DOES NOT fund the best times.
@@ -238,6 +238,12 @@ class node:
 
     def return_buffer_list(self):
         return self.buffer_list
+
+    def empty_sent_packets(self):
+        self.sent_packets = []
+
+    def empty_packet_list(self):
+        self.packet_list = []
 
     def process_time(self):
         time.sleep(self.process_time)
@@ -417,7 +423,7 @@ class node:
 
         check_length = len(checking_list)
 
-        # Iterate over checking_list until all packets have beeb checked
+        # Iterate over checking_list until all packets have been checked
         # for all parts.
 
         # We put each packet in a part_list and then check for all three
@@ -443,12 +449,10 @@ class node:
                 if len(part_list) == 3:
                     packets_arrived.append(part_list)
                     for y in range(len(part_list)):
-                        packet_del = part_list[y]
-                        pack_del_num = packet_del.return_packet_num()
-                        pack_del_from = packet_del.return_sent_from()
-                        self.check_remove(pack_del_num, pack_del_from)
-                    for x in range(3):
-                        checking_list.remove(part_list[x])
+                        if part_list[y] in self.packet_list:
+                            self.packet_list.remove(part_list[y])
+                        if part_list[y] in checking_list:
+                            checking_list.remove(part_list[y])
 
                     # Always adjust check_length when removing packets.
 
@@ -477,6 +481,8 @@ class node:
                                 checking_list.remove(pack)
                                 streamed_parts_removed += 1
                                 check_length = check_length - 1
+                            if pack in self.packet_list:
+                                self.packet_list.remove(pack)
                     else:
                         part_check_list = [1, 2, 3]
                         part_got_list = []
@@ -523,7 +529,7 @@ class node:
                         # Finally request a re-send of one or two parts of a packet.
 
                         for finalCount in range(len(merged_list)):
-                             node_list[sent_from_node].resend_part(packet,packet_num, merged_list[finalCount])
+                            node_list[sent_from_node].resend_part(packet,packet_num, merged_list[finalCount])
 
         # Reset time-stamps on packets awaiting a re-send.
 
@@ -564,6 +570,14 @@ class node:
             self.sent_packets.remove(packet)
 
     def receive_packet(self, packet):
+
+        if packet in self.forward_list:
+            #print('RECIEVED A DUPLICATE!!GOING IN THE DROPPED PACKETS LIST.')
+            dropped_pack_list.append(packet)
+            self.forward_list.remove(packet)
+        if packet in self.packet_list:
+            dropped_pack_list.append(packet)
+            self.packet_list.remove(packet)
 
         # As soon as a packet is received we add that
         # node to the packets visited_list. This lets us
@@ -648,6 +662,9 @@ class packet:
 
     # Below are a series of small functions
     # that return various information about a packet.
+
+    def return_routing_path(self):
+        return self.visited_list
 
     def return_time_arrived(self):
         return self.time_arrived
@@ -737,7 +754,7 @@ def main():
     # to their respective nodes. The sleep function aims to imitate the
     # time for a node to process the data.
 
-    for count in range(5):
+    for count in range(3):
         node_one.sort_packets()
         node_one.send_packets()
         time.sleep(process_time[1])
@@ -776,11 +793,26 @@ def main():
         node_five.check_packet_parts()
         node_six.check_packet_parts()
 
+        # After each iteration I need to empty the list that collects each resent part.
+        # This global list is used to count the number of packets a node resends.
+
+        # After one iteration I need to reset this list to keep count of the total packets
+        # resent with multiple iterations.
+
+        print('Total Number of resent Packets: ' + str(len(resent_parts)) + '\n')
+        empty_resent()
+
         # The following print statements and method calls allow the developer to ensure
         # their are no missing packets, or duplicate packets, within the system.
 
         # The total packets in a nodes packetList, bufferlist and any packets dropped should
         # be equal to the total packets created plus the number of packets re-requested.
+
+        node_one.empty_sent_packets()
+        node_two.empty_sent_packets()
+        node_three.empty_sent_packets()
+        node_four.empty_sent_packets()
+        node_five.empty_sent_packets()
 
     print('-------------------------------------------\n')
 
@@ -838,15 +870,6 @@ def main():
     print('--------------------------')
     print('PACKAGES LEFT IN NODE SIX PACKET LIST: ' + str(len(node_six.packet_list)))
     print('--------------------------\n')
-    print('Total Number of resent Packets: ' + str(len(resent_parts)) + '\n')
-
-    # After each iteration I need to empty the list that collects each resent part.
-    # This global list is used to count the number of packets a node resends.
-
-    # After one iteration I need to reset this list to keep count of the total packets
-    # resent with multiple iterations.
-
-    empty_resent()
 
     # The function find_best_times gets packets out of the packets_arrived list and
     # puts them into my timeTracker list of lists (a list of journeys).
