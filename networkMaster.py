@@ -496,7 +496,7 @@ class node:
                             part_num = int(part_list[miniCount].return_part_num())
                             part_got_list.append(part_num)
 
-                        # Using 'symemetric_difference' and 'set' we can then produce a
+                        # Using 'symmetric_difference' and 'set' we can then produce a
                         # final list of the parts we need to request from various nodes.
 
                         # This is merging my checkPartParts and my part_got_list, to give
@@ -572,9 +572,9 @@ class node:
     def receive_packet(self, packet):
 
         if packet in self.forward_list:
-            #print('RECIEVED A DUPLICATE!!GOING IN THE DROPPED PACKETS LIST.')
             dropped_pack_list.append(packet)
             self.forward_list.remove(packet)
+            
         if packet in self.packet_list:
             dropped_pack_list.append(packet)
             self.packet_list.remove(packet)
@@ -589,7 +589,7 @@ class node:
 
         dest = packet.return_destination()
 
-        # If the packet has noe arrived, record its time
+        # If the packet has not arrived, record its time
         # of arrival and add to that nodes packetList.
 
         # If the packet still needs to continue on its
@@ -886,6 +886,7 @@ def main():
     top_three_journey()
 
 main()
+
 
 
 
