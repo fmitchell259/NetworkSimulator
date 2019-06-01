@@ -27,5 +27,5 @@ is the best choice for any journey, from each node to the other, throughout
 the network. Input of either 0 or 999 mean that no such journey exists (such
 as going directly from node 1 to node 5).
 
-This is in turn will allow the system to automatically adjust
+This, in turn, will allow the system to automatically adjust
 its routing table as need arises. 
