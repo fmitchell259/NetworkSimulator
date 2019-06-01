@@ -78,6 +78,11 @@ for count in range(36):
     best_time_list = []
     time_tracker_list.append(best_time_list)
 
+def clear_transfer_list():
+
+    for x in range(len(transfer_list)):
+        wee_l = transfer_list[x]
+        wee_l.clear()
 
 def top_three_journey():
 
@@ -378,28 +383,6 @@ class node:
 
         return transfer_count
 
-    def check_remove(self, packet_num, sent_from):
-
-        # A small function to remove packets
-        # from a node's packetList.
-
-        del_list = []
-        del_pack = 0
-        length = len(self.packet_list)
-
-        for count in range(length):
-            index = (length - count) - 1
-            packet = self.packet_list[index]
-            pack_num_loop = packet.return_packet_num()
-            sent_from_loop = packet.return_sent_from()
-            if pack_num_loop == packet_num and sent_from_loop == sent_from:
-                del_list.append(index)
-
-        for countTwo in range(len(del_list)):
-            del self.packet_list[del_list[countTwo]]
-            del_pack += 1
-
-
     def check_packet_parts(self):
 
         # Create a checking_list, this will be populated by
@@ -447,12 +430,17 @@ class node:
                         part_list.append(packet2)
 
                 if len(part_list) == 3:
-                    packets_arrived.append(part_list)
                     for y in range(len(part_list)):
+                        if part_list[y] in self.forward_list:
+                            self.forward_list.remove(packet)
                         if part_list[y] in self.packet_list:
                             self.packet_list.remove(part_list[y])
                         if part_list[y] in checking_list:
                             checking_list.remove(part_list[y])
+
+                        part_list[y].record_time_arrived()
+
+                    packets_arrived.append(part_list)
 
                     # Always adjust check_length when removing packets.
 
@@ -571,10 +559,12 @@ class node:
 
     def receive_packet(self, packet):
 
+        pack_route_list = packet.return_routing_path()
+
         if packet in self.forward_list:
             dropped_pack_list.append(packet)
             self.forward_list.remove(packet)
-            
+
         if packet in self.packet_list:
             dropped_pack_list.append(packet)
             self.packet_list.remove(packet)
@@ -582,6 +572,7 @@ class node:
         # As soon as a packet is received we add that
         # node to the packets visited_list. This lets us
         # keep track of which nodes a packet has visited.
+
 
         packet.add_visit(self.address)
 
@@ -641,11 +632,6 @@ class node:
                     node_list[dest_node].receive_packet(dest_list[countTwo])
                     packets_moved += 1
 
-        # Clear all my lists for the next iteration.
-
-        for count3 in range(len(transfer_list)):
-            list = transfer_list[count3]
-            list = []
 
 class packet:
     def __init__(self, sent_from, send_to, data, data_type, time_stamp, part_num, packet_num):
@@ -779,12 +765,11 @@ def main():
         node_six.send_packets()
         time.sleep(process_time[6])
 
-        # When all packets have been sorted and sent they are held in a nodes checking_list.
+        # When all packets have been sorted   / vb,vbb,.and sent they are held in a nodes checking_list.
         # This allows for a node to check that all 'parts' of a packet have been received.
         # If a packet has been waiting longer than 2 seconds it will be checked for completeness.
         # If a packet is complete it will be removed from the node completely and added to the global packets_arrived list.
         # Items in this list comprise a list of three 'parts' of a packet (which are packet objects themselves).
-
 
         node_one.check_packet_parts()
         node_two.check_packet_parts()
@@ -798,6 +783,10 @@ def main():
 
         # After one iteration I need to reset this list to keep count of the total packets
         # resent with multiple iterations.
+
+        # Transfer list needs cleared before the next iteration can start.
+
+        clear_transfer_list()
 
         print('Total Number of resent Packets: ' + str(len(resent_parts)) + '\n')
         empty_resent()
@@ -884,6 +873,27 @@ def main():
     # will naturally arrive at its destination.
 
     top_three_journey()
+    
+    for x in range(len(packets_arrived)):
+        pack_3 = packets_arrived[x]
+        pack = pack_3[0]
+        pack_dest = pack.return_destination()
+        pack_num = pack.return_packet_num()
+        pack_from = pack.return_sent_from()
+        pack_timeStamp = pack.return_time_stamp()
+        pack_arrived = pack.return_time_arrived()
+        time_taken = pack_arrived - pack_timeStamp
+        pack_route = pack.return_routing_path()
+        print("\n-------------------------------\n")
+        print("This is packet: " + str(pack_num))
+        print("I am from Node: " + str(pack_from))
+        print("I am gong to: " + str(pack_dest))
+        print("This packets timestamp is: " + str(pack_timeStamp))
+        print("This packet arrived at: " + str(pack_arrived))
+        print("I took this amount of time to arrive: " + str(time_taken))
+        print("This was my route: " + str(pack_route))
+        print('\n-------------------------------\n')
+
 
 main()
 
