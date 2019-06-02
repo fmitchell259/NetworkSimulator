@@ -91,6 +91,13 @@ def top_three_journey():
 
     node_tracker = []
     best_time_tracker = []
+    top_three_packets = []
+
+    for x in range(36):
+        l = []
+        for y in range(3):
+            l.append(0)
+        top_three_packets.append(l)
 
     for counting in range(36):
         node_list = []
@@ -119,6 +126,7 @@ def top_three_journey():
         journey_list = time_tracker_list[count11]
         best_node_list = node_tracker[count11]
         best_time = best_time_tracker[count11]
+        top_three_list = top_three_packets[count11]
 
         for count12 in range(len(journey_list)):
 
@@ -129,10 +137,11 @@ def top_three_journey():
             packet_check = journey_list[count12]
             pack_arrived = packet_check.return_time_arrived()
             pack_create = packet_check.return_time_stamp()
-
+            pack_resent = packet_check.resent
             best_node = packet_check.visited_list[0]
             time_arrived = pack_arrived - pack_create
-
+            if pack_resent == True:
+                break
             if time_arrived < best_time[2] and time_arrived < best_time[1] and time_arrived > best_time[0]:
 
                 # Save my best time and nodes in index 2.
@@ -149,6 +158,8 @@ def top_three_journey():
 
                 best_node_list[2] = node
                 best_node_list[1] = best_node
+
+                top_three_list[1] = packet_check
 
             if time_arrived < best_time[2] and time_arrived < best_time[1] and time_arrived < best_time[0]:
 
@@ -174,6 +185,8 @@ def top_three_journey():
                 best_node_list[2] = node_1
                 best_node_list[0] = best_node
 
+                top_three_list[0] = packet_check
+
             if time_arrived < best_time[2] and time_arrived > best_time[1]:
 
                 # No need to save the times or nodes from other indexes,
@@ -181,6 +194,8 @@ def top_three_journey():
 
                 best_time[2] = time_arrived
                 best_node_list[2] = best_node
+
+                top_three_list[2] = packet_check
 
     # Using python's built in zip function I pulled the two lists together to output a tuple.
     # Each tuple represents a journey (1-2,1-3,1-4 etc) with the top three (from left to right) in each tuple.
@@ -190,7 +205,6 @@ def top_three_journey():
     for count21 in range(len(final_best_list)):
         journey = final_best_list[count21]
         print('Journey: ' + str(count21+1) + ' : ' + str(journey))
-
 
 def find_best_times(arrived_list):
 
@@ -398,7 +412,7 @@ class node:
 
         for count in range(len(self.packet_list)):
             packet = self.packet_list[count]
-            if abs(now - packet.time_stamp) > 2.0:
+            if abs(now - packet.return_time_arrived()) > 1.0:
                 checking_list.append(packet)
 
         # Set my control variable check_length, this will be used
@@ -431,8 +445,6 @@ class node:
 
                 if len(part_list) == 3:
                     for y in range(len(part_list)):
-                        if part_list[y] in self.forward_list:
-                            self.forward_list.remove(packet)
                         if part_list[y] in self.packet_list:
                             self.packet_list.remove(part_list[y])
                         if part_list[y] in checking_list:
@@ -740,7 +752,7 @@ def main():
     # to their respective nodes. The sleep function aims to imitate the
     # time for a node to process the data.
 
-    for count in range(3):
+    for count in range(10):
         node_one.sort_packets()
         node_one.send_packets()
         time.sleep(process_time[1])
@@ -873,27 +885,6 @@ def main():
     # will naturally arrive at its destination.
 
     top_three_journey()
-    
-    for x in range(len(packets_arrived)):
-        pack_3 = packets_arrived[x]
-        pack = pack_3[0]
-        pack_dest = pack.return_destination()
-        pack_num = pack.return_packet_num()
-        pack_from = pack.return_sent_from()
-        pack_timeStamp = pack.return_time_stamp()
-        pack_arrived = pack.return_time_arrived()
-        time_taken = pack_arrived - pack_timeStamp
-        pack_route = pack.return_routing_path()
-        print("\n-------------------------------\n")
-        print("This is packet: " + str(pack_num))
-        print("I am from Node: " + str(pack_from))
-        print("I am gong to: " + str(pack_dest))
-        print("This packets timestamp is: " + str(pack_timeStamp))
-        print("This packet arrived at: " + str(pack_arrived))
-        print("I took this amount of time to arrive: " + str(time_taken))
-        print("This was my route: " + str(pack_route))
-        print('\n-------------------------------\n')
-
 
 main()
 
