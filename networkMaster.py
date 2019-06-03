@@ -14,6 +14,7 @@ process_time = [0, 0.2, 0.2, 0.2, 0.2, 1, 0.2]
 # Fibre Link Limitations.
 
 fibre_limits = []
+
 for count in range(36):
     fibre_limits.append(0)
 
@@ -78,11 +79,13 @@ for count in range(36):
     best_time_list = []
     time_tracker_list.append(best_time_list)
 
+
 def clear_transfer_list():
 
-    for x in range(len(transfer_list)):
-        wee_l = transfer_list[x]
+    for lists in transfer_list:
+        wee_l = lists
         wee_l.clear()
+
 
 def top_three_journey():
 
@@ -118,28 +121,30 @@ def top_three_journey():
         time_list.append(999)
         time_list.append(999)
 
-    for count11 in range(len(time_tracker_list)):
+    for t_list, n_list, best_list, top_list in \
+            zip(time_tracker_list, node_tracker, best_time_tracker, top_three_packets):
 
         # Go through timeTracker and pick up a journey list.
         # Pick up the appropriate best_node and best_time list (i.e. journey 1-2, 1-3, 1-4 etc.)
 
-        journey_list = time_tracker_list[count11]
-        best_node_list = node_tracker[count11]
-        best_time = best_time_tracker[count11]
-        top_three_list = top_three_packets[count11]
+        journey_list = t_list
+        best_node_list = n_list
+        best_time = best_list
+        top_three_list = top_list
 
-        for count12 in range(len(journey_list)):
+        for pack in journey_list:
 
             # Go through each journey_list and pick up a packet.
             # Check where it came from, where it is going and the time it took to get there.
             # This info all used to compare with our best_time and best_node list.
 
-            packet_check = journey_list[count12]
+            packet_check = pack
             pack_arrived = packet_check.return_time_arrived()
             pack_create = packet_check.return_time_stamp()
             pack_resent = packet_check.resent
             best_node = packet_check.visited_list[0]
             time_arrived = pack_arrived - pack_create
+
             if pack_resent == True:
                 break
             if time_arrived < best_time[2] and time_arrived < best_time[1] and time_arrived > best_time[0]:
@@ -200,11 +205,10 @@ def top_three_journey():
     # Using python's built in zip function I pulled the two lists together to output a tuple.
     # Each tuple represents a journey (1-2,1-3,1-4 etc) with the top three (from left to right) in each tuple.
 
-    final_best_list = list(zip(node_tracker,best_time_tracker))
+    final_best_list = zip(node_tracker,best_time_tracker)
 
-    for count21 in range(len(final_best_list)):
-        journey = final_best_list[count21]
-        print('Journey: ' + str(count21+1) + ' : ' + str(journey))
+    for num, journey in enumerate(final_best_list, start=1):
+        print('Journey: ' + str(num+1) + ' : ' + str(journey))
 
 def find_best_times(arrived_list):
 
@@ -213,18 +217,18 @@ def find_best_times(arrived_list):
     # timeTracker list of lists ready for the function
     # topThree to find the BEST times.
 
-    for count_2 in range(len(arrived_list)):
-        packet_list = arrived_list[count_2]
-        packet = packet_list[0]
-        sent_from = packet.return_sent_from()
+    for p_list in arrived_list:
+        packet_list = p_list
+        pack = packet_list[0]
+        sent_from = pack.return_sent_from()
         if sent_from == 1:
-            pack_destination = packet.return_destination()
+            pack_destination = pack.return_destination()
             index = pack_destination - 1
-            time_tracker_list[index].append(packet)
+            time_tracker_list[index].append(pack)
         else:
-            pack_destination = packet.return_destination()
+            pack_destination = pack.return_destination()
             index = ((sent_from - 1)*6) + (pack_destination-1)
-            time_tracker_list[index].append(packet)
+            time_tracker_list[index].append(pack)
 
 def empty_resent():
 
@@ -348,8 +352,8 @@ class node:
         # to request a re-send if a packet has not arrived.
 
         if self.address == 1:
-            for count in range(len(self.forward_list)):
-                packet = self.forward_list[count]
+            for p in self.forward_list:
+                packet = p
                 dest = packet.return_destination()
                 possible_nodes = self.return_routing_path(dest)
                 random_node = random.choice(possible_nodes)
@@ -362,15 +366,15 @@ class node:
                 else:
                     buff_count = self.check_buff_size()
                     if buff_count < self.buffer_size:
-                        self.buffer_list.append(self.forward_list[count])
+                        self.buffer_list.append(p)
                         packets_transfer_buff += 1
                     else:
-                        dropped_pack_list.append(self.forward_list[count])
+                        dropped_pack_list.append(p)
                         packets_transfer_drop += 1
 
         else:
-            for count in range(len(self.forward_list)):
-                packet = self.forward_list[count]
+            for p in self.forward_list:
+                packet = p
                 dest = packet.return_destination()
                 possible_nodes = self.return_routing_path(dest)
                 random_node = random.choice(possible_nodes)
@@ -383,10 +387,10 @@ class node:
                 else:
                     buff_count = self.check_buff_size()
                     if buff_count < self.buffer_size:
-                        self.buffer_list.append(self.forward_list[count])
+                        self.buffer_list.append(p)
                         packets_transfer_buff += 1
                     else:
-                        dropped_pack_list.append(self.forward_list[count])
+                        dropped_pack_list.append(p)
                         packets_transfer_drop += 1
 
         # Empty the forward_list, ready for the next iteration of packets.
@@ -407,11 +411,11 @@ class node:
         resend_parts = 0
         streamed_parts_removed = 0
 
-        # Check if a packet in a nodes packetList has been waiting longer
+        # Check if a packet in a nodes packetList has b                   vbvbvhhv n]bjheen waiting longer
         # then two seconds, if so, add it to checking_list.
 
-        for count in range(len(self.packet_list)):
-            packet = self.packet_list[count]
+        for p in self.packet_list:
+            packet = p
             if abs(now - packet.return_time_arrived()) > 1.0:
                 checking_list.append(packet)
 
@@ -444,13 +448,13 @@ class node:
                         part_list.append(packet2)
 
                 if len(part_list) == 3:
-                    for y in range(len(part_list)):
-                        if part_list[y] in self.packet_list:
-                            self.packet_list.remove(part_list[y])
-                        if part_list[y] in checking_list:
-                            checking_list.remove(part_list[y])
+                    for mini_pack in part_list:
+                        if mini_pack in self.packet_list:
+                            self.packet_list.remove(mini_pack)
+                        if mini_pack in checking_list:
+                            checking_list.remove(mini_pack)
 
-                        part_list[y].record_time_arrived()
+                        mini_pack.record_time_arrived()
 
                     packets_arrived.append(part_list)
 
@@ -492,8 +496,8 @@ class node:
                         # The part_list contains packet objects so a loop is required
                         # to produce a part_got_list of each packet's part number.
 
-                        for miniCount in range(len(part_list)):
-                            part_num = int(part_list[miniCount].return_part_num())
+                        for wee_packs in part_list:
+                            part_num = int(wee_packs.return_part_num())
                             part_got_list.append(part_num)
 
                         # Using 'symmetric_difference' and 'set' we can then produce a
@@ -518,8 +522,8 @@ class node:
                         # Go over my checking list and remove the packets
                         # I have in the part_list.
 
-                        for x in range(len(part_list)):
-                            checking_list.remove(part_list[x])
+                        for pack in part_list:
+                            checking_list.remove(pack)
 
                         # Always adjust my control variable (check_length) when removing
                         # packets from the checking_list.
@@ -528,13 +532,13 @@ class node:
 
                         # Finally request a re-send of one or two parts of a packet.
 
-                        for finalCount in range(len(merged_list)):
-                            node_list[sent_from_node].resend_part(packet,packet_num, merged_list[finalCount])
+                        for tup in merged_list:
+                            node_list[sent_from_node].resend_part(packet,packet_num, tup)
 
         # Reset time-stamps on packets awaiting a re-send.
 
-        for countThree in range(len(self.packet_list)):
-            packet = self.packet_list[countThree]
+        for packs in self.packet_list:
+            packet = packs
             packet.reset_time_stamp()
             packet.record_time_arrived()
 
@@ -546,8 +550,8 @@ class node:
         # find the missing packet. Consult that nodes
         # routing table and re-send.
 
-        for count in range(len(self.sent_packets)):
-            packet = self.sent_packets[count]
+        for p in self.sent_packets:
+            packet = p
             packet_num = int(packet.return_packet_num())
             if packet_num == pack_num:
                 part_number = int(packet.return_part_num())
@@ -570,8 +574,6 @@ class node:
             self.sent_packets.remove(packet)
 
     def receive_packet(self, packet):
-
-        pack_route_list = packet.return_routing_path()
 
         if packet in self.forward_list:
             dropped_pack_list.append(packet)
@@ -887,6 +889,7 @@ def main():
     top_three_journey()
 
 main()
+
 
 
 
