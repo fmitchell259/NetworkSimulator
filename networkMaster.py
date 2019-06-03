@@ -205,10 +205,8 @@ def top_three_journey():
     # Using python's built in zip function I pulled the two lists together to output a tuple.
     # Each tuple represents a journey (1-2,1-3,1-4 etc) with the top three (from left to right) in each tuple.
 
-    final_best_list = zip(node_tracker,best_time_tracker)
-
-    for num, journey in enumerate(final_best_list, start=1):
-        print('Journey: ' + str(num+1) + ' : ' + str(journey))
+    final_best = zip(node_tracker,best_time_tracker)
+    print("\n".join(f"Journey {num}: {journey}" for num, journey in enumerate(final_best, start=1)))
 
 def find_best_times(arrived_list):
 
