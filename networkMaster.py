@@ -1,4 +1,4 @@
-import random, time, collections
+import random, time
 
 # Initialise the lists I need for each
 # of my functions (Creating packets, sending
@@ -142,11 +142,33 @@ def top_three_journey():
             pack_arrived = packet_check.return_time_arrived()
             pack_create = packet_check.return_time_stamp()
             pack_resent = packet_check.resent
+
             best_node = packet_check.visited_list[0]
             time_arrived = pack_arrived - pack_create
 
-            if pack_resent == True:
+            if pack_resent:
                 break
+
+            for ind in enumerate(best_node_list):
+                if best_node in best_node_list:
+                    if ind == 0:
+                        if best_time[0] > time_arrived:
+                            best_time[0] = time_arrived
+
+                    elif ind == 1:
+                        if best_time[1] > time_arrived:
+                            best_time[1] = best_time[2]
+                            best_time[2] = 999
+
+                            best_node_list[1] = best_node_list[2]
+                            best_node_list[2] = 0
+
+                    else:
+                        if best_time[2] > time_arrived:
+                            best_time[2] = 999
+                            best_node_list[2] = 0
+
+
             if time_arrived < best_time[2] and time_arrived < best_time[1] and time_arrived > best_time[0]:
 
                 # Save my best time and nodes in index 2.
@@ -205,8 +227,13 @@ def top_three_journey():
     # Using python's built in zip function I pulled the two lists together to output a tuple.
     # Each tuple represents a journey (1-2,1-3,1-4 etc) with the top three (from left to right) in each tuple.
 
-    final_best = zip(node_tracker,best_time_tracker)
-    print("\n".join(f"Journey {num}: {journey}" for num, journey in enumerate(final_best, start=1)))
+    final_best_list = zip(node_tracker,best_time_tracker)
+
+    # for num, journey in enumerate(final_best_list, start=1):
+    #     print('Journey: ' + str(num+1) + ' : ' + str(journey))
+
+    return final_best_list
+
 
 def find_best_times(arrived_list):
 
@@ -228,6 +255,7 @@ def find_best_times(arrived_list):
             index = ((sent_from - 1)*6) + (pack_destination-1)
             time_tracker_list[index].append(pack)
 
+
 def empty_resent():
 
     # I have a global resent list to keep track
@@ -243,12 +271,12 @@ def empty_resent():
 
 
 class node:
-    def __init__(self, address, process_time, node_size, buffer_size, route_table):
+    def __init__(self, address, process_time, node_size, buffer_size, link_table):
         self.address = address
         self.node_size = node_size
         self.process_time = process_time
         self.buffer_size = buffer_size
-        self.route_table = route_table
+        self.link_table = link_table
         self.packet_list = []
         self.buffer_list = []
         self.sent_packets = []
@@ -256,6 +284,27 @@ class node:
         self.pack_drop = 0
         self.pack_buff = 0
         self.forward_list = []
+
+        self.routing_list = {1: [], 2: [],
+                             3: [], 4: [],
+                             5: [], 6: []}
+
+    def return_routing_list(self):
+        return self.routing_list
+
+    def update_routing(self, top_route_list):
+
+        index_jump = ((self.address - 1) * number_of_nodes)
+
+        for c in range(number_of_nodes):
+            new_route_list = top_route_list[c + index_jump]
+            self.routing_list[c+1] = new_route_list
+
+    def return_link_list(self, dest):
+
+        linkage_list = self.link_table[dest]
+        return linkage_list
+
 
     def return_buffer_list(self):
         return self.buffer_list
@@ -305,7 +354,7 @@ class node:
 
         # Return a route table based on destination.
 
-        route_table = self.route_table[dest]
+        route_table = self.link_table[dest]
 
         return route_table
 
@@ -353,9 +402,14 @@ class node:
             for p in self.forward_list:
                 packet = p
                 dest = packet.return_destination()
+
+                # IF active_network == False:
+
                 possible_nodes = self.return_routing_path(dest)
-                random_node = random.choice(possible_nodes)
-                index = random_node - 1
+                selected_node = random.choice(possible_nodes)
+
+                index = selected_node - 1
+
                 if fibre_tracker[index] < fibre_limits[index]:
                     fibre_tracker[index] += 1
                     transfer_list[index].append(packet)
@@ -369,6 +423,12 @@ class node:
                     else:
                         dropped_pack_list.append(p)
                         packets_transfer_drop += 1
+
+                # TODO:      SELECT FROM ROUTING LIST.
+                # TODO:      USE WEE MATHS TO PICK RIGHT LIST.
+                # TODO:      COMPLETE COMPARISONS ON EACH SENDING NODE.
+                # TODO:      IF CAN GO TO INDEX 0, SEND, OTHERWISE 1
+                # TODO:      OTHERWISE 2, OTHERWISE DROP.
 
         else:
             for p in self.forward_list:
@@ -409,7 +469,7 @@ class node:
         resend_parts = 0
         streamed_parts_removed = 0
 
-        # Check if a packet in a nodes packetList has b                   vbvbvhhv n]bjheen waiting longer
+        # Check if a packet in a nodes packetList has been waiting longer
         # then two seconds, if so, add it to checking_list.
 
         for p in self.packet_list:
@@ -884,7 +944,51 @@ def main():
     # sorts and sends in order. So if a packet follows a chronological routing it
     # will naturally arrive at its destination.
 
-    top_three_journey()
+    best_list = top_three_journey()
+    saved_best = []
+
+    # Zipped objects can only be unpacked once, so I have saved a copy into saved_best.
+
+    for num, journey in enumerate(best_list, start=1):
+        saved_best.append(journey)
+        print('Journey: ' + str(num+1) + ' : ' + str(journey))
+
+    # Initialise a separate list to hold only the next_best_node list for each journey.
+
+    node_j_list = []
+
+    # Pull each best_node_list from each tuple within my saved list.
+
+    for tup in saved_best:
+        tup_choice = tup
+        node_j = tup_choice[0]
+        node_j_list.append(node_j)
+
+    # Some test print statements to check my update_routing function.
+    # ---------------------------------------------------------------
+    # TODO: MUST REMOVE DUPLICATES FROM EACH LIST IN SEPARATE FUNCTION.
+    #       I WILL DO THIS BY CREATING AN UPDATE WITHIN THE NODE. THIS
+    #       WAY EACH NODE CAN CALL ITS LINK DICTIONARY AS REFERENCE.
+
+    print("Node routing_list before receiving top times.\n")
+
+    for n, nod in enumerate(node_list, start=1):
+        print("Node: " + str(n) + " Routing Table.\n")
+        dict = nod.return_routing_list()
+        print(dict)
+
+    print("Updating....\n")
+
+    for n in node_list:
+        n.update_routing(node_j_list)
+
+    print("Node One routing_list after receiving top times.\n")
+
+    for n, nod in enumerate(node_list, start=1):
+        print("Node: " + str(n) + " Routing Table.\n")
+        dict = nod.return_routing_list()
+        print(dict)
+
 
 main()
 
