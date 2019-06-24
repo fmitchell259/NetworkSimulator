@@ -11,6 +11,10 @@ packets_arrived = []
 number_of_nodes = 6
 process_time = [0, 0.2, 0.2, 0.2, 0.2, 1, 0.2]
 
+# Initialise a separate list to hold only the next_best_node list for each journey.
+
+node_j_list = []
+
 # Fibre Link Limitations.
 
 fibre_limits = []
@@ -229,9 +233,6 @@ def top_three_journey():
 
     final_best_list = zip(node_tracker,best_time_tracker)
 
-    # for num, journey in enumerate(final_best_list, start=1):
-    #     print('Journey: ' + str(num+1) + ' : ' + str(journey))
-
     return final_best_list
 
 
@@ -292,7 +293,60 @@ class node:
     def return_routing_list(self):
         return self.routing_list
 
+    def top_next_link_compare(self, top_route_list):
+
+        # Need this IF statement because I initialised a nodeZero in the 0 index of my list of nodes.
+        # Because i iterate over the node list to change the route values I need to account for my zero node.
+
+        if self.address == 0:
+            return -1
+
+        # Little bit of maths to choose the right set of lists.
+
+        index_hop = ((self.address - 1) * number_of_nodes)
+
+        print("Index hop for node: " + str(self.address) + " is " + str(index_hop))
+
+        # Now we iterate over the top node list, picking out each list one at a time and removing zero node values and duplicates.
+        # We also compare to the nodes linkage list and add from there when we remove duplicates of zeros.
+
+        for outer_list in range(6):
+            if self.address == outer_list + 1:
+                pass
+            else:
+                # First iterate to remove zeros.
+                inner_node_list = top_route_list[outer_list + index_hop]
+                for ind, nodes_loop in enumerate(inner_node_list):
+                    if inner_node_list[ind] == 0:
+                        link_table = self.link_table.get(outer_list + 1)
+                        if len(inner_node_list) > len(link_table):
+                            index_l = len(link_table) - 1
+                            value = link_table[index_l]
+                            inner_node_list[ind] = value
+                        else:
+                            value = link_table[ind]
+                            inner_node_list[ind] = value
+
+                # Next iterate over both the link and node lists to remove duplicates.
+                # Use swaps to exit the FOR loop.
+
+                swaps = 0
+                for i in range(len(inner_node_list)):
+                    for j in range(i+1, len(inner_node_list)):
+                        link_table2 = self.link_table.get(outer_list + 1)
+                        if inner_node_list[j] == inner_node_list[i]:
+                                value = inner_node_list[j]
+                                for n, nod in enumerate(link_table2):
+                                    if link_table2[n] != value:
+                                        inner_node_list[j] = link_table2[n]
+                                        swaps += 1
+                                        if swaps > 2:
+                                            break
+
     def update_routing(self, top_route_list):
+
+        if self.address == 0:
+            return -1
 
         index_jump = ((self.address - 1) * number_of_nodes)
 
@@ -304,7 +358,6 @@ class node:
 
         linkage_list = self.link_table[dest]
         return linkage_list
-
 
     def return_buffer_list(self):
         return self.buffer_list
@@ -402,9 +455,6 @@ class node:
             for p in self.forward_list:
                 packet = p
                 dest = packet.return_destination()
-
-                # IF active_network == False:
-
                 possible_nodes = self.return_routing_path(dest)
                 selected_node = random.choice(possible_nodes)
 
@@ -423,12 +473,6 @@ class node:
                     else:
                         dropped_pack_list.append(p)
                         packets_transfer_drop += 1
-
-                # TODO:      SELECT FROM ROUTING LIST.
-                # TODO:      USE WEE MATHS TO PICK RIGHT LIST.
-                # TODO:      COMPLETE COMPARISONS ON EACH SENDING NODE.
-                # TODO:      IF CAN GO TO INDEX 0, SEND, OTHERWISE 1
-                # TODO:      OTHERWISE 2, OTHERWISE DROP.
 
         else:
             for p in self.forward_list:
@@ -943,7 +987,7 @@ def main():
     # A packet can make a multi-hop journey with one iteration because the system
     # sorts and sends in order. So if a packet follows a chronological routing it
     # will naturally arrive at its destination.
-
+    
     best_list = top_three_journey()
     saved_best = []
 
@@ -951,11 +995,7 @@ def main():
 
     for num, journey in enumerate(best_list, start=1):
         saved_best.append(journey)
-        print('Journey: ' + str(num+1) + ' : ' + str(journey))
-
-    # Initialise a separate list to hold only the next_best_node list for each journey.
-
-    node_j_list = []
+        print('Journey: ' + str(num) + ' : ' + str(journey))
 
     # Pull each best_node_list from each tuple within my saved list.
 
@@ -964,16 +1004,15 @@ def main():
         node_j = tup_choice[0]
         node_j_list.append(node_j)
 
-    # Some test print statements to check my update_routing function.
-    # ---------------------------------------------------------------
-    # TODO: MUST REMOVE DUPLICATES FROM EACH LIST IN SEPARATE FUNCTION.
-    #       I WILL DO THIS BY CREATING AN UPDATE WITHIN THE NODE. THIS
-    #       WAY EACH NODE CAN CALL ITS LINK DICTIONARY AS REFERENCE.
+    # Iterate to remove duplicates and zeros.
+
+    for n, nodes in enumerate(node_list):
+        node_list[n].top_next_link_compare(node_j_list)
 
     print("Node routing_list before receiving top times.\n")
 
     for n, nod in enumerate(node_list, start=1):
-        print("Node: " + str(n) + " Routing Table.\n")
+        print("Node: " + str(n) + " Routing Table before update.\n")
         dict = nod.return_routing_list()
         print(dict)
 
@@ -984,10 +1023,10 @@ def main():
 
     print("Node One routing_list after receiving top times.\n")
 
-    for n, nod in enumerate(node_list, start=1):
-        print("Node: " + str(n) + " Routing Table.\n")
+    for n, nod in enumerate(node_list, start=0):
+        print("Node: " + str(n) + " Routing Table after update.")
         dict = nod.return_routing_list()
-        print(dict)
+        print(str(dict) + '\n')
 
 
 main()
