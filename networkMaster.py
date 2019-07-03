@@ -10,6 +10,9 @@ data_type = ['Video', 'Textfile', 'Audio', 'Code', 'Image', 'Game Streaming', 'D
 packets_arrived = []
 number_of_nodes = 6
 process_time = [0, 0.2, 0.2, 0.2, 0.2, 1, 0.2]
+active_network = False
+test_iterations = 5
+run_iterations = 10
 
 # Initialise a separate list to hold only the next_best_node list for each journey.
 
@@ -91,7 +94,33 @@ def clear_transfer_list():
         wee_l.clear()
 
 
-def top_three_journey():
+def update_routing_tables(best_list):
+
+    saved_best = []
+
+    # Zipped objects can only be unpacked once, so I have saved a copy into saved_best.
+
+    for num, journey in enumerate(best_list, start=1):
+        saved_best.append(journey)
+        # print('Journey: ' + str(num) + ' : ' + str(journey))
+
+    # Pull each best_node_list from each tuple within my saved list.
+
+    for tup in saved_best:
+        tup_choice = tup
+        node_j = tup_choice[0]
+        node_j_list.append(node_j)
+
+    for n, nodes in enumerate(node_list):
+        node_list[n].top_next_link_compare(node_j_list)
+
+    print("Updating Routing Tables....\n")
+
+    for n in node_list:
+        n.update_routing(node_j_list)
+
+
+def top_three_journey(p):
 
     # Start by creating two empty lists which will also hold a bunch of lists.
     # The lists within nodetracker and best_time_tracker will correspond to journeys through the network.
@@ -233,7 +262,16 @@ def top_three_journey():
 
     final_best_list = zip(node_tracker,best_time_tracker)
 
-    return final_best_list
+    # Because the zipped output can only be unpacked ONCE, we need a parameter to control prints.
+    if p == 1:
+
+        for num, journey in enumerate(final_best_list, start=1):
+            print('Journey: ' + str(num+1) + ' : ' + str(journey))
+
+        return final_best_list
+    else:
+
+        return final_best_list
 
 
 def find_best_times(arrived_list):
@@ -407,7 +445,10 @@ class node:
 
         # Return a route table based on destination.
 
-        route_table = self.link_table[dest]
+        if not active_network:
+            route_table = self.link_table[dest]
+        else:
+            route_table = self.routing_list[dest]
 
         return route_table
 
@@ -438,10 +479,9 @@ class node:
         packets_transfer_buff = 0
         packets_transfer_drop = 0
 
-        # My sorting algorithm works in two ways. Because my transfer_list
+        # My sorting algorithm works because my transfer_list
         # is a list of lists, I needed a wee bit of maths to pick up the
-        # correct list. This works one way when the address is 1 and a
-        # slightly different way when the address is greater than 1.
+        # correct list.
 
         # The following block sorts packets from a node's forward_list and
         # puts them in their appropriate transfer_list list. This is depending
@@ -451,49 +491,25 @@ class node:
         # We also create a copy of all the packets sent to allow other nodes
         # to request a re-send if a packet has not arrived.
 
-        if self.address == 1:
-            for p in self.forward_list:
-                packet = p
-                dest = packet.return_destination()
-                possible_nodes = self.return_routing_path(dest)
-                selected_node = random.choice(possible_nodes)
-
-                index = selected_node - 1
-
-                if fibre_tracker[index] < fibre_limits[index]:
-                    fibre_tracker[index] += 1
-                    transfer_list[index].append(packet)
-                    self.sent_packets.append(packet)
-                    packets_transfer_list += 1
+        for p in self.forward_list:
+            packet = p
+            dest = packet.return_destination()
+            possible_nodes = self.return_routing_path(dest)
+            random_node = random.choice(possible_nodes)
+            index = ((self.address - 1) * number_of_nodes) + (random_node - 1)
+            if fibre_tracker[index] < fibre_limits[index]:
+                fibre_tracker[index] += 1
+                transfer_list[index].append(packet)
+                self.sent_packets.append(packet)
+                packets_transfer_list += 1
+            else:
+                buff_count = self.check_buff_size()
+                if buff_count < self.buffer_size:
+                    self.buffer_list.append(p)
+                    packets_transfer_buff += 1
                 else:
-                    buff_count = self.check_buff_size()
-                    if buff_count < self.buffer_size:
-                        self.buffer_list.append(p)
-                        packets_transfer_buff += 1
-                    else:
-                        dropped_pack_list.append(p)
-                        packets_transfer_drop += 1
-
-        else:
-            for p in self.forward_list:
-                packet = p
-                dest = packet.return_destination()
-                possible_nodes = self.return_routing_path(dest)
-                random_node = random.choice(possible_nodes)
-                index = ((self.address - 1) * number_of_nodes) + (random_node - 1)
-                if fibre_tracker[index] < fibre_limits[index]:
-                    fibre_tracker[index] += 1
-                    transfer_list[index].append(packet)
-                    self.sent_packets.append(packet)
-                    packets_transfer_list += 1
-                else:
-                    buff_count = self.check_buff_size()
-                    if buff_count < self.buffer_size:
-                        self.buffer_list.append(p)
-                        packets_transfer_buff += 1
-                    else:
-                        dropped_pack_list.append(p)
-                        packets_transfer_drop += 1
+                    dropped_pack_list.append(p)
+                    packets_transfer_drop += 1
 
         # Empty the forward_list, ready for the next iteration of packets.
 
@@ -644,7 +660,7 @@ class node:
             packet.reset_time_stamp()
             packet.record_time_arrived()
 
-        print('THIS IS NODE: ' + str(self.address) + " REMOVED THIS MANY STREAM PACKETS: " + str(streamed_parts_removed))
+        # print('THIS IS NODE: ' + str(self.address) + " REMOVED THIS MANY STREAM PACKETS: " + str(streamed_parts_removed))
 
     def resend_part(self,packet, pack_num, part_num):
 
@@ -708,7 +724,6 @@ class node:
             self.pack_received += 1
         else:
             self.forward_list.append(packet)
-
 
     def check_buff_size(self):
         return len(self.buffer_list)
@@ -844,7 +859,7 @@ def main():
     print(str(node_six_gen) + ' packets generated in Node 6.')
 
     total_pack = node_one_gen + node_two_gen + node_three_gen + node_four_gen + node_five_gen + node_six_gen
-    print(' TOtal packages created : ' + str(total_pack))
+    print('\nTotal packages created : ' + str(total_pack) + '\n')
 
     # Start the process of sending packets.Each node sorts the packets
     # in their packetList.
@@ -856,7 +871,7 @@ def main():
     # to their respective nodes. The sleep function aims to imitate the
     # time for a node to process the data.
 
-    for count in range(10):
+    for count in range(test_iterations):
         node_one.sort_packets()
         node_one.send_packets()
         time.sleep(process_time[1])
@@ -921,65 +936,16 @@ def main():
 
     print('-------------------------------------------\n')
 
-    total_arrived = len(packets_arrived)
-
-    print('TOTAL PACKETS ARRIVED AT DESTINATION: ' + str(total_arrived) + '\n')
-    print('TOTAL PACKETS CREATED: ' + str(total_pack))
-    print('TOTAL PACKETS ARRIVED: ' + str(total_arrived))
-    print('-------------\n')
-    print('---------------------------')
-    print('PACKAGES LEFT IN NODE ONE FORWARD LIST: ' + str(len(node_one.forward_list)))
-    print('--------------------------')
-    print('PACKAGES LEFT IN NODE TWO FORWARD LIST: ' + str(len(node_two.forward_list)))
-    print('--------------------------')
-    print('PACKAGES LEFT IN NODE THREE FORWARD LIST: ' + str(len(node_three.forward_list)))
-    print('--------------------------')
-    print('PACKAGES LEFT IN NODE FOUR FORWARD LIST: ' + str(len(node_four.forward_list)))
-    print('--------------------------')
-    print('PACKAGES LEFT IN NODE FIVE FORWARD LIST: ' + str(len(node_five.forward_list)))
-    print('--------------------------')
-    print('PACKAGES LEFT IN NODE SIX FORWARD LIST: ' + str(len(node_six.forward_list)))
-
-    node_oneBuff = node_one.return_buffer_list()
-    node_twoBuff = node_two.return_buffer_list()
-    node_threeBuff = node_three.return_buffer_list()
-    node_fourBuff = node_four.return_buffer_list()
-    node_fiveBuff = node_five.return_buffer_list()
-    node_sixBuff = node_six.return_buffer_list()
-
-    print('------------------------------')
-    print('TOTAL LEFT IN BUFFER ONE: ' + str(len(node_oneBuff)))
-    print('TOTAL LEFT IN BUFFER TWO: ' + str(len(node_twoBuff)))
-    print('TOTAL LEFT IN BUFFER THREE: ' + str(len(node_threeBuff)))
-    print('TOTAL LEFT IN BUFFER FOUR: ' + str(len(node_fourBuff)))
-    print('TOTAL LEFT IN BUFFER FIVE: ' + str(len(node_fiveBuff)))
-    print('TOTAL LEFT IN BUFFER SIX: ' + str(len(node_sixBuff)))
-    print('')
-    print('--------------------------------')
-    print('SIZE OF DROPPED PACKET LIST: ' + str(len(dropped_pack_list)))
-    print('--------------------------------')
-
-    print('FIBRE LIMIT LIST: ' + '\t' + str(fibre_limits[::]))
-    print('FIBRE TRACKER LIST: ' + str(fibre_tracker[::]))
-
-    print('---------------------------')
-    print('PACKAGES LEFT IN NODE ONE PACKET LIST: ' + str(len(node_one.packet_list)))
-    print('--------------------------')
-    print('PACKAGES LEFT IN NODE TWO PACKET LIST: ' + str(len(node_two.packet_list)))
-    print('--------------------------')
-    print('PACKAGES LEFT IN NODE THREE PACKET LIST: ' + str(len(node_three.packet_list)))
-    print('--------------------------')
-    print('PACKAGES LEFT IN NODE FOUR PACKET LIST: ' + str(len(node_four.packet_list)))
-    print('--------------------------')
-    print('PACKAGES LEFT IN NODE FIVE PACKET LIST: ' + str(len(node_five.packet_list)))
-    print('--------------------------')
-    print('PACKAGES LEFT IN NODE SIX PACKET LIST: ' + str(len(node_six.packet_list)))
-    print('--------------------------\n')
-
     # The function find_best_times gets packets out of the packets_arrived list and
     # puts them into my timeTracker list of lists (a list of journeys).
 
+    print(f"\nNetwork has ran for {test_iterations} test iterations using randomly chosen linkage tables. Calculating best times and adjusting route tables.\n")
+
     find_best_times(packets_arrived)
+
+    print(f"\nTimes for packets in the testing phase: \n")
+
+    print_best = top_three_journey(1)
 
     # The function topThree iterates over each sorted timeTracker packet and creates
     # a top three fastest packets for each journey in the network.
@@ -988,45 +954,78 @@ def main():
     # sorts and sends in order. So if a packet follows a chronological routing it
     # will naturally arrive at its destination.
     
-    best_list = top_three_journey()
-    saved_best = []
+    best_list = top_three_journey(0)
 
-    # Zipped objects can only be unpacked once, so I have saved a copy into saved_best.
+    update_routing_tables(best_list)
 
-    for num, journey in enumerate(best_list, start=1):
-        saved_best.append(journey)
-        print('Journey: ' + str(num) + ' : ' + str(journey))
+    print(f"\nRoute tables updated and network now running for {run_iterations} running iterations, using updated route tables.\n")
 
-    # Pull each best_node_list from each tuple within my saved list.
+    for count in range(run_iterations):
+        node_one.sort_packets()
+        node_one.send_packets()
+        time.sleep(process_time[1])
 
-    for tup in saved_best:
-        tup_choice = tup
-        node_j = tup_choice[0]
-        node_j_list.append(node_j)
+        node_two.sort_packets()
+        node_two.send_packets()
+        time.sleep(process_time[2])
 
-    # Iterate to remove duplicates and zeros.
+        node_three.sort_packets()
+        node_three.send_packets()
+        time.sleep(process_time[3])
 
-    for n, nodes in enumerate(node_list):
-        node_list[n].top_next_link_compare(node_j_list)
+        node_four.sort_packets()
+        node_four.send_packets()
+        time.sleep(process_time[4])
 
-    print("Node routing_list before receiving top times.\n")
+        node_five.sort_packets()
+        node_five.send_packets()
+        time.sleep(process_time[5])
 
-    for n, nod in enumerate(node_list, start=1):
-        print("Node: " + str(n) + " Routing Table before update.\n")
-        dict = nod.return_routing_list()
-        print(dict)
+        node_six.sort_packets()
+        node_six.send_packets()
+        time.sleep(process_time[6])
 
-    print("Updating....\n")
+        # When all packets have been sorted   / vb,vbb,.and sent they are held in a nodes checking_list.
+        # This allows for a node to check that all 'parts' of a packet have been received.
+        # If a packet has been waiting longer than 2 seconds it will be checked for completeness.
+        # If a packet is complete it will be removed from the node completely and added to the global packets_arrived list.
+        # Items in this list comprise a list of three 'parts' of a packet (which are packet objects themselves).
 
-    for n in node_list:
-        n.update_routing(node_j_list)
+        node_one.check_packet_parts()
+        node_two.check_packet_parts()
+        node_three.check_packet_parts()
+        node_four.check_packet_parts()
+        node_five.check_packet_parts()
+        node_six.check_packet_parts()
 
-    print("Node One routing_list after receiving top times.\n")
+        # After each iteration I need to empty the list that collects each resent part.
+        # This global list is used to count the number of packets a node resends.
 
-    for n, nod in enumerate(node_list, start=0):
-        print("Node: " + str(n) + " Routing Table after update.")
-        dict = nod.return_routing_list()
-        print(str(dict) + '\n')
+        # After one iteration I need to reset this list to keep count of the total packets
+        # resent with multiple iterations.
+
+        # Transfer list needs cleared before the next iteration can start.
+
+        clear_transfer_list()
+
+        print('Total Number of resent Packets: ' + str(len(resent_parts)) + '\n')
+        empty_resent()
+
+        # The following print statements and method calls allow the developer to ensure
+        # their are no missing packets, or duplicate packets, within the system.
+
+        # The total packets in a nodes packetList, bufferlist and any packets dropped should
+        # be equal to the total packets created plus the number of packets re-requested.
+
+        node_one.empty_sent_packets()
+        node_two.empty_sent_packets()
+        node_three.empty_sent_packets()
+        node_four.empty_sent_packets()
+        node_five.empty_sent_packets()
+
+    print(f"\nRunning phase has ran for {run_iterations}. Now testing best times.\n")
+
+    run_best = top_three_journey(1)
 
 
 main()
