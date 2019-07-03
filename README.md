@@ -1,31 +1,24 @@
 # NetworkSimulator
 A system to simulate packets moving around a network. 
 
-
-
 As part of my tutorage I have been learning about networks, my tutor
 explained the underlying princibles, a rough idea of how the code
 should look and left me to start building. 
 
-At the moment the network completes one full iteration, taking account
-of fibre-capacity, buffer-size and processing speed. Each packet is made
-up of three parts , randomly mixed then sent round the network. If
-a part is waiting at its arrival node for longer than two seconds, a 
-request is made to re-send that part. 
+My network will run for a number of "test iterations" (a global variable 
+the programmer can set at the top of the script). After this the network
+examines all the packets received and calucates the top three fastest
+times for each journey within the network. 
 
-After one full iteration all packets are accounted for, either in the buffer,
-the packetsArrived list, the nodes themselves or the droppedPackets list. My
-plan is to set up functionality to determine the fastest route round the network
-before implementing multiple iterations. 
+These top times are accompanied by a list of nodes that were visited in 
+order to achieve these times. Using this node list the network creates new
+routing tables within each node (up to this point routes have been chosen
+based on randomly picked "node linkage" lists).
 
-The system also detects packets from sent from streaming services and does not make a
-request for missing parts. Instead drops the data into my droppedPackets list. 
+My "active_network" switch is then turned to True and the network runs through
+a number of "running iterations" (a global variable that can also be set at the
+top of the script). Finally the network will print the top times for this
+final iteration of the network. 
 
-After one iteration the system examines the time each packet
-has taken to arrive at its destination. This lets us see which node 
-is the best choice for any journey, from each node to the other, throughout
-the network. Input of either 0 or 999 mean that no such journey exists (such
-as going directly from node 1 to node 5).
-
-This, in turn, will allow the system to automatically adjust
-its routing table as need arises. 
+Future plans include a geentic topology generator that will use these times
+to weight different shapes and sizes of networks to create an optimal solution.
